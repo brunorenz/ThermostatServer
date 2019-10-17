@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html class="no-js" lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Termostat manager">
+<meta name="author" content="Bruno Renzoni">
+<link rel="shortcut icon" href="/images/img.png">
+<link href="./public/stylesheets/bootstrap.css" rel="stylesheet">
+<link href="./public/stylesheets/style2.css" rel="stylesheet">
+
+<script src="./public/javascripts/highcharts.src.js"></script>
+<script src="./public/javascripts/jquery.js"></script>
+<script src="./public/javascripts/bootstrap.js"></script>
+<script src="./public/javascripts/material.js"></script>
+<script type="text/javascript" src="./public/javascripts/TermCommon.js"></script>
+<script type="text/javascript">
+  $(document).ready(function()
+  {
+	var options = {
+	  parameter : "#select-id",
+	  callback : fillConfiguration,
+	  callbackOne : displayDayStatistics
+	}
+	$('#elencoDispositivi').hide();
+	$('#noDispositivi').hide();
+	getConfiguration(options);
+
+  });
+</script>
+</head>
+
+<body>
+	<div class="wrapper">
+
+		<!-- Sidebar Holder -->
+		<nav id="sidebar">
+			<div class="sidebar-header">
+				<h3>Thermostat Dashboard</h3>
+			</div>
+			<ul class="list-unstyled components">
+				<li><a href="./dashboard"> <i class="glyphicon glyphicon-home"></i> Home
+				</a></li>
+				<li><a href="./configurazione"> <i class="glyphicon glyphicon-cog"></i>Gestione
+				</a></li>
+				<li class="active"><a href="./statistiche"> <i class="glyphicon glyphicon-stats"></i>Statistiche
+				</a></li>
+				<li><a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false"><i class="glyphicon glyphicon-list-alt"></i>Programmazione</a>
+					<ul class="collapse list-unstyled" id="homeSubmenu">
+						<li><a href="./programmazioneTemp"><i class="glyphicon glyphicon-fire"></i>Accensione Riscaldamento</a></li>
+						<li><a href="./programmazioneLight">Accensione Luce</a></li>
+					</ul></li>
+			</ul>
+		</nav>
+
+		<!-- Page Content Holder -->
+		<div id="content">
+			<nav class="navbar navbar-default">
+				<div class="container-fluid">
+					<div class="navbar-header">
+						<button type="button" id="sidebarCollapse"
+							class="btn btn-info navbar-btn">
+							<i class="glyphicon glyphicon-menu-hamburger"></i> <span>Menu</span>
+						</button>
+					</div>
+				</div>
+			</nav>
+
+			<h2>Statistiche</h2>
+			<div class="row col-md-12 col-sm-12 col-xs-12">
+				<form class="form-horizontal">
+					<div id="noDispositivi">
+						<label class="control-label col-sm-4" style="text-align: left">Nessun
+							Dispositivo Registrato</label>
+					</div>
+					<div id="elencoDispositivi" class="form-group">
+						<label class="control-label col-sm-2" for="select-id">Dispositivi
+							registrati:</label>
+						<div class="col-sm-6">
+							<select class="form-control" id="select-id">
+							</select>
+						</div>
+					</div>
+					<input id="key" type="hidden" name="key">
+				</form>
+			</div>
+
+			<div type="button">AGGIORNA</div>
+			<div class="panel-group col-md-12 col-sm-12 col-xs-12">
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h4 class="panel-title">
+							<a>Statistiche Giornaliere</a>
+						</h4>
+					</div>
+					<div id="DayStatistics" class="panel-collapse collapse">
+						<div id="plot1"></div>
+						<div id="plot2"></div>
+						<div id="plot3"></div>
+						<div id="plot4"></div>
+					</div>
+				</div>
+			</div>
+			<!-- 			<div id="plot2"></div>
+			<div class="row col-md-12 col-sm-12 col-xs-12">
+				<p id="linechart_temperature" class="chart"></p>
+				<div id="linechart_pressure" class="chart"></div>
+			</div>
+			-->
+
+		</div>
+	</div>
+	<script type="text/javascript">
+	$(document).ready(function()
+	{
+	  $('#select-id').change(function(ee)
+	  {
+		$("#select-id option[value='-1']").remove();
+		var id = ee.target;
+		var strUser = id.options[id.selectedIndex].value;
+
+		var options = {
+		  callback : displayDayStatistics,
+		  key : id.options[id.selectedIndex].value
+		}
+		getConfiguration(options);
+	  });
+	  $('#sidebarCollapse').on('click', function()
+	  {
+		$('#sidebar').toggleClass('active');
+	  });
+	});
+  </script>
+</body>
+</html>
