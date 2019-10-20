@@ -6,7 +6,7 @@ var tm  = require('./ThermServer/routes/termManagment');
 var http = require('http');
 var app = express();
 var ep_app = require("./ThermServer/ThermServer");
-app.use('/WS/therm', ep_app);
+app.use('/therm', ep_app);
 
 
 var port = process.env.PORT || globaljs.SERVER_PORT;

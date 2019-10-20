@@ -6,8 +6,8 @@
 		"start": "node MainServer.js"
 	},
 	"dependencies": {
-		"express": "*",
-		"lokijs": "*",
+		"express": "4.17.1",
+		"lokijs": "1.5.7",
 		"moment": "*",
 		"serve-favicon": "*",
 		"morgan": "*",

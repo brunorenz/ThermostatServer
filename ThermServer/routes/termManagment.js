@@ -609,7 +609,11 @@ function wifiRegisterInternal(remoteConf, callback) {
 var wifiRegister = function(req, res) {
   if (!checkSecurity(req, res)) return;
   var remoteConf = req.body;
-  res.json(wifiRegisterInternal(remoteConf));
+  try {
+    res.json(wifiRegisterInternal(remoteConf));
+  } catch (error) {
+    res.json(createResponse(null, 500, "Generic error : "+error));
+  }  
 };
 
 /**
