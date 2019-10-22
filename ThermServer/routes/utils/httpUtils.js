@@ -1,6 +1,6 @@
 var http = require("http");
 var webSocket = require("ws");
-var globaljs = require("./global");
+var globaljs = require("../global");
 
 var params = function(req) {
   var result = {};
@@ -8,7 +8,7 @@ var params = function(req) {
   if (q.length >= 2) {
     var items = q[1].split("&");
 
-    // .forEach(function(item)
+    //.forEach(function(item)
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
       try {
@@ -16,7 +16,7 @@ var params = function(req) {
       } catch (e) {
         result[item.split("=")[0]] = "";
       }
-    } // );
+    } //);
   }
   return result;
 };
@@ -94,52 +94,6 @@ var httpGetJSON = function(options, mycallback, param) {
     console.log(err);
   });
 };
-var mapGet = function(map, key) {
-  var ret;
-  if (map) {
-    for (var i = 0, len = map.length; i < len; i++) {
-      var entry = map[i];
-      if (entry.key === key) {
-        ret = entry.value;
-        break;
-      }
-    }
-    /*
-     * map.forEach(function f(entry) { if (entry.key === key) { ret =
-     * entry.value; } });
-     */
-  }
-  return ret;
-};
-
-var mapPut = function(map, key, value) {
-  if (map) {
-    var found = false;
-    for (
-      var i = 0, len = map.length;
-      i < len;
-      i++ // for (var entry in map)
-    ) {
-      var entry = map[i];
-      if (entry.key === key) {
-        found = true;
-        entry.value = value;
-        break;
-      }
-    }
-    /*
-     * map.forEach(function f(entry) { if (entry.key === key) { found = true;
-     * entry.value = value; } });
-     */
-    if (!found) {
-      var entry = {
-        key: key,
-        value: value
-      };
-      map.push(entry);
-    }
-  }
-};
 
 var webSocketSendEvent = function(event) {
   var map = globaljs.WSS;
@@ -186,28 +140,62 @@ var webSocketConnection = function(ws, req) {
   }
 
   console.log("WEBSOCKET connection from client ip " + ip);
-
-  /*
-   * ws.on('ping', function incoming(message) { console.log('PING'); }); /*
-   * ws.on('pong', function incoming(message) { console.log('PONG'); });
-   * ws.on('open', function incoming(message) { console.log('OPEN'); });
-   */
 };
 
-var floorTime = function(interval, time, isSecond) {
-  var div = 1000 * interval;
-  if (typeof isSecond == "undefined" || !isSecond) div = div * 60;
-  var now = time === null ? new Date() : time;
-  var l1 = now;
-  var l2 = Math.floor(l1 / div) * div;
-  return new Date(l2);
+/**
+ * Create errore response code
+ * @param {*} errorCode
+ * @param {*} message
+ */
+var createResponseKo = function(errorCode, error) {
+  let message = error;
+  if (error instanceof Error) {
+    message = error.name + " : " + error.message;
+  }
+  return createResponse(null, errorCode, message);
+};
+/**
+ * Create generic response
+ */
+var createResponse = function(object, errorCode, message) {
+  if (!errorCode) {
+    errorCode = 0;
+    message = "OK";
+  }
+  var error = {
+    code: errorCode,
+    message: message
+  };
+  var response = {
+    error: error
+  };
+  if (object !== null) {
+    response.data = object;
+  }
+  return response;
+};
+/**
+ * Check basic authentication from http header
+ */
+var checkSecurity = function(req, res) {
+  var rc = true;
+  if (globaljs.BASIC_AUTH_REQUIRED) {
+    if (!req.headers.authorization) {
+      res.send(400, "missing authorization header");
+      rc = false;
+    } else if (req.headers.authorization !== globaljs.BASIC_AUTH) {
+      res.send(401);
+      rc = false;
+    }
+  }
+  return rc;
 };
 
-//module.exports.webSocketSendEvent = webSocketSendEvent;
-//module.exports.webSocketConnection = webSocketConnection;
-module.exports.floorTime = floorTime;
-module.exports.mapPut = mapPut;
-module.exports.mapGet = mapGet;
-//module.exports.httpGetJSON = httpGetJSON;
-//module.exports.httpPostJSON = httpPostJSON;
-//module.exports.httpGetParam = params;
+module.exports.createResponse = createResponse;
+module.exports.createResponseKo = createResponseKo;
+module.exports.checkSecurity = checkSecurity;
+module.exports.webSocketSendEvent = webSocketSendEvent;
+module.exports.webSocketConnection = webSocketConnection;
+module.exports.httpGetJSON = httpGetJSON;
+module.exports.httpPostJSON = httpPostJSON;
+module.exports.httpGetParam = params;

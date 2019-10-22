@@ -1,4 +1,5 @@
 var globaljs = require("./global");
+var httpUtils = require("./utils/httpUtils");
 var termDBFunction = require("./termDB");
 var termDBStatFunction = require("./termStatDB");
 var http = require("http");
@@ -46,26 +47,6 @@ var startMonitoring = function(conf) {
 
   setTimeout(startMonitoring, globaljs.MONITOR_TIMEOUT, conf);
 };
-/**
- * Create generic response
- */
-function createResponse(object, errorCode, message) {
-  if (!errorCode) {
-    errorCode = 0;
-    message = "OK";
-  }
-  var error = {
-    code: errorCode,
-    message: message
-  };
-  var response = {
-    error: error
-  };
-  if (object !== null) {
-    response.data = object;
-  }
-  return response;
-}
 
 /**
  * Return just current programming if any (type temperature)
@@ -122,7 +103,7 @@ function getProgrammingInfo(idDispType, all) {
 
 /**
  * Check basic authentication from http header
- */
+ *
 function checkSecurity(req, res) {
   var rc = true;
   if (globaljs.BASIC_AUTH_REQUIRED) {
@@ -136,6 +117,7 @@ function checkSecurity(req, res) {
   }
   return rc;
 }
+*/
 
 /**
  * Check if a massive DB update is running
@@ -184,7 +166,7 @@ function updateConfigurationTimeStamp(tms) {
  * Update programming configuration
  */
 var updateTempProgramming = function(req, res) {
-  if (!checkSecurity(req, res)) return;
+  if (!httpUtils.checkSecurity(req, res)) return;
   var p = req.body;
   if (p.dati) {
     var t = p.dati;
@@ -217,7 +199,7 @@ var updateTempProgramming = function(req, res) {
 };
 
 var updateConfiguration = function(req, res) {
-  if (!checkSecurity(req, res)) return;
+  if (!httpUtils.checkSecurity(req, res)) return;
   var p = req.body;
 
   var conf = readConfByKey(p.key);
@@ -247,13 +229,17 @@ var updateConfiguration = function(req, res) {
 var monitor = function(req, res) {
   // console.log("Monitor REQ body : " + JSON.stringify(req.body))
   // console.log("Monitor REQ params : " + JSON.stringify(req.params))
-  if (!checkSecurity(req, res)) return;
-  var conf = readConfByKey(req.params.key);
-  if (!conf) {
-    res.json(createResponse(null, 100, "Configuration not Found"));
-  } else {
-    termDBFunction.updateTermLog(globaljs.termStatdb, conf, req.body);
-    res.json(createResponse(null));
+  if (!httpUtils.checkSecurity(req, res)) return;
+  try {
+    var conf = readConfByKey(req.params.key);
+    if (!conf) {
+      res.json(httpUtils.createResponse(null, 100, "Configuration not Found"));
+    } else {
+      termDBFunction.updateTermLog(globaljs.termStatdb, conf, req.body);
+      res.json(httpUtils.createResponse(null));
+    }
+  } catch (error) {
+    res.json(httpUtils.createResponseKo(500, error));
   }
 };
 
@@ -261,31 +247,33 @@ var monitor = function(req, res) {
  * Generic read DB collections
  */
 var readDB = function(req, res) {
-  if (!checkSecurity(req, res)) return;
-  var p = myutils.httpGetParam(req);
-  var options = {
-    collection: globaljs.CONF,
-    key: 0,
-    maxRecords: 100,
-    sort: "a"
-  };
-  if (p) {
-    if (p.sort && p.sort === "d") {
-      options.sort = "d";
+  if (!httpUtils.checkSecurity(req, res)) return;
+  try {
+    //var p = myutils.httpGetParam(req);
+    var options = {
+      collection: globaljs.CONF,
+      key: 0,
+      maxRecords: 100,
+      sort: "a"
+    };
+    if (req.query.sort === "d") options.sort = "d";
+    if (req.query.coll) {
+      if (req.query.coll === "log") options.collection = globaljs.LOG;
+      else if (req.query.coll === "prog") options.collection = globaljs.PROG;
+      else if (req.query.coll === "stat") options.collection = globaljs.STAT;
     }
-    if (p.coll) {
-      if (p.coll === "log") options.collection = globaljs.LOG;
-      else if (p.coll === "prog") options.collection = globaljs.PROG;
-      else if (p.coll === "stat") options.collection = globaljs.STAT;
+    if (req.query.key) options.key = parseInt(req.query.key);
+    if (req.query.maxRecords)
+      options.maxRecords = parseInt(preq.query.maxRecords);
+    console.log("Call readCollection with options " + JSON.stringify(options));
+    var rs = termDBFunction.readCollection(globaljs.termStatdb, options);
+    if (rs) {
+      res.json(httpUtils.createResponse(rs));
+    } else {
+      res.json(httpUtils.createResponse(null, 100, "Collection not Found"));
     }
-    if (p.key) options.key = parseInt(p.key);
-    if (p.maxRecords) options.maxRecords = parseInt(p.maxRecords);
-  }
-  var rs = termDBFunction.readCollection(globaljs.termStatdb, options);
-  if (rs) {
-    res.json(createResponse(rs));
-  } else {
-    res.json(createResponse(null, 100, "Collection not Found"));
+  } catch (error) {
+    res.json(httpUtils.createResponseKo(500, error));
   }
 };
 
@@ -293,33 +281,44 @@ var readDB = function(req, res) {
  * Delete a programming entry
  */
 var removeProgramming = function(req, res) {
-  if (!checkSecurity(req, res)) return;
-
-  var type = -1;
-  var id = -1;
-  var p = myutils.httpGetParam(req);
-  if (p) {
-    if (p.type) {
-      if (p.type === "temp") type = globaljs.PROG_TEMP;
-      else if (p.type === "light") type = globaljs.PROG_LIGHT;
+  if (!httpUtils.checkSecurity(req, res)) return;
+  try {
+    var type = -1;
+    var id = -1;
+    var p = myutils.httpGetParam(req);
+    if (p) {
+      if (p.type) {
+        if (p.type === "temp") type = globaljs.PROG_TEMP;
+        else if (p.type === "light") type = globaljs.PROG_LIGHT;
+      }
+      if (p.id) {
+        id = parseInt(p.id);
+      }
     }
-    if (p.id) {
-      id = parseInt(p.id);
-    }
-  }
-  if (id === -1) {
-    res.json(createResponse(null, 999, "Nessuna programmazione eliminata"));
-  } else {
-    var prog = termDBFunction.deleteProgramming(globaljs.termStatdb, type, id);
-    if (prog) {
-      updateConfigurationTimeStamp(prog.lastUpdate);
-      termDBFunction.saveDatabase(
-        globaljs.termStatdb,
-        "Save Database after deleteProgramming completed"
+    if (id === -1) {
+      res.json(
+        httpUtils.createResponseKo(999, "Nessuna programmazione eliminata")
       );
-      res.json(createResponse(prog));
-    } else
-      res.json(createResponse(null, 999, "Nessuna programmazione eliminata"));
+    } else {
+      var prog = termDBFunction.deleteProgramming(
+        globaljs.termStatdb,
+        type,
+        id
+      );
+      if (prog) {
+        updateConfigurationTimeStamp(prog.lastUpdate);
+        termDBFunction.saveDatabase(
+          globaljs.termStatdb,
+          "Save Database after deleteProgramming completed"
+        );
+        res.json(httpUtils.createResponse(prog));
+      } else
+        res.json(
+          httpUtils.createResponseKo(999, "Nessuna programmazione eliminata")
+        );
+    }
+  } catch (error) {
+    res.json(httpUtils.createResponseKo(500, error));
   }
 };
 
@@ -327,62 +326,82 @@ var removeProgramming = function(req, res) {
  * Add a new programming entry
  */
 var addProgramming = function(req, res) {
-  if (!checkSecurity(req, res)) return;
-
-  var type = -1;
-  var p = myutils.httpGetParam(req);
-  if (p) {
-    if (p.type) {
-      if (p.type === "temp") type = globaljs.PROG_TEMP;
-      else if (p.type === "light") type = globaljs.PROG_LIGHT;
+  if (!httpUtils.checkSecurity(req, res)) return;
+  try {
+    var type = -1;
+    var p = myutils.httpGetParam(req);
+    if (p) {
+      if (p.type) {
+        if (p.type === "temp") type = globaljs.PROG_TEMP;
+        else if (p.type === "light") type = globaljs.PROG_LIGHT;
+      }
     }
+    var prog = termDBFunction.addProgramming(globaljs.termStatdb, type);
+    if (prog) {
+      updateConfigurationTimeStamp(prog.lastUpdate);
+      termDBFunction.saveDatabase(
+        globaljs.termStatdb,
+        "Save Database after addProgramming completed"
+      );
+      res.json(httpUtils.createResponse(prog));
+    } else
+      res.json(
+        httpUtils.createResponseKo(999, "Nessuna programmazione aggiunta")
+      );
+  } catch (error) {
+    res.json(httpUtils.createResponseKo(500, error));
   }
-  var prog = termDBFunction.addProgramming(globaljs.termStatdb, type);
-  if (prog) {
-    updateConfigurationTimeStamp(prog.lastUpdate);
-    termDBFunction.saveDatabase(
-      globaljs.termStatdb,
-      "Save Database after addProgramming completed"
-    );
-    res.json(createResponse(prog));
-  } else res.json(createResponse(null, 999, "Nessuna programmazione aggiunta"));
 };
 
 /**
  * Get programming info type = temp/light prog = all / reset
+ * @param {*} req
+ * @param {*} res
  */
 var getProgramming = function(req, res) {
-  if (!checkSecurity(req, res)) return;
+  if (!httpUtils.checkSecurity(req, res)) return;
 
-  var all = false;
-  var reset = false;
-  var type = globaljs.PROG_TEMP;
-  var p = myutils.httpGetParam(req);
-  if (p) {
-    if (p.type) {
-      if (p.type === "temp") type = globaljs.PROG_TEMP;
-      else if (p.type === "light") type = globaljs.PROG_LIGHT;
+  try {
+    var all = false;
+    var reset = false;
+    var type = globaljs.PROG_TEMP;
+    //    var p = myutils.httpGetParam(req);
+    if (req.query.type) {
+      if (req.query.type === "temp") type = globaljs.PROG_TEMP;
+      else if (req.query.type === "light") type = globaljs.PROG_LIGHT;
     }
-    if (p.prog) {
-      all = p.prog === "all";
-      reset = p.prog === "reset";
+    if (req.query.prog) {
+      all = req.query.prog === "all";
+      reset = req.query.prog === "reset";
     }
-  }
-  if (reset) {
-    var prog = termDBFunction.resetProgramming(globaljs.termStatdb, type);
-    updateConfigurationTimeStamp(prog.lastUpdate);
-    termDBFunction.saveDatabase(
-      globaljs.termStatdb,
-      "Save Database after resetProgramming completed"
-    );
-    res.json(createResponse(prog));
-  } else {
-    var out = getProgrammingInfo(type, all);
-    if (out === null) {
-      res.json(createResponse(null, 100, "Programming not Found"));
+    // if (p) {
+    //   if (p.type) {
+    //     if (p.type === "temp") type = globaljs.PROG_TEMP;
+    //     else if (p.type === "light") type = globaljs.PROG_LIGHT;
+    //   }
+    //   if (p.prog) {
+    //     all = p.prog === "all";
+    //     reset = p.prog === "reset";
+    //   }
+    // }
+    if (reset) {
+      var prog = termDBFunction.resetProgramming(globaljs.termStatdb, type);
+      updateConfigurationTimeStamp(prog.lastUpdate);
+      termDBFunction.saveDatabase(
+        globaljs.termStatdb,
+        "Save Database after resetProgramming completed"
+      );
+      res.json(httpUtils.createResponse(prog));
     } else {
-      res.json(createResponse(out));
+      var out = getProgrammingInfo(type, all);
+      if (out === null) {
+        res.json(httpUtils.createResponse(null, 100, "Programming not Found"));
+      } else {
+        res.json(httpUtils.createResponse(out));
+      }
     }
+  } catch (error) {
+    res.json(httpUtils.createResponse(500, error));
   }
 };
 
@@ -390,28 +409,31 @@ var getProgramming = function(req, res) {
  * Get statistic info
  */
 var getStatistics = function(req, res) {
-  if (!checkSecurity(req, res)) return;
-
-  var conf = readConfByKey(req.params.key);
-  if (!conf) {
-    res.json(createResponse(null, 100, "Configuration not Found"));
-  } else {
-    var p = myutils.httpGetParam(req);
-    if (conf) {
-      var param = {
-        type: "day",
-        interval: 5
-      };
-      if (p.type) param.type = p.type.toLowerCase();
-      if (p.interval) param.interval = parseInt(p.interval);
-      res.json(
-        createResponse(
-          termDBStatFunction.getStatistics(globaljs.termStatdb, conf, param)
-        )
-      );
+  if (!httpUtils.checkSecurity(req, res)) return;
+  try {
+    var conf = readConfByKey(req.params.key);
+    if (!conf) {
+      res.json(httpUtils.createResponse(null, 100, "Configuration not Found"));
     } else {
-      res.json(createResponse(null, 100, "Not Found"));
+      var p = myutils.httpGetParam(req);
+      if (conf) {
+        var param = {
+          type: "day",
+          interval: 5
+        };
+        if (p.type) param.type = p.type.toLowerCase();
+        if (p.interval) param.interval = parseInt(p.interval);
+        res.json(
+          httpUtils.createResponse(
+            termDBStatFunction.getStatistics(globaljs.termStatdb, conf, param)
+          )
+        );
+      } else {
+        res.json(httpUtils.createResponse(null, 100, "Not Found"));
+      }
     }
+  } catch (error) {
+    res.json(httpUtils.createResponseKo(500, error));
   }
 };
 
@@ -419,44 +441,48 @@ var getStatistics = function(req, res) {
  * Check for configuration changes
  */
 var checkConfigurationChange = function(req, res) {
-  if (!checkSecurity(req, res)) return;
+  if (!httpUtils.checkSecurity(req, res)) return;
   // Key is IdDisp
-  var conf = readConfByKey(req.params.key, true);
-  if (conf) {
-    var needUpdate = 0;
-    var p = myutils.httpGetParam(req);
-    if (p && p.lastUpdate) {
-      needUpdate = conf.lastUpdate - Number(p.lastUpdate) > 1000 ? 1 : 0;
-    } else {
-      needUpdate = 1;
-      // return whole configuration
-    }
-    var change = {
-      needUpdate: needUpdate
-    };
-    if (needUpdate === 1) {
-      var configuration = {
-        status: conf.status,
-        lastUpdate: conf.lastUpdate,
-        tempMeasure: conf.tempMeasure
+  try {
+    var conf = readConfByKey(req.params.key, true);
+    if (conf) {
+      var needUpdate = 0;
+      var p = myutils.httpGetParam(req);
+      if (p && p.lastUpdate) {
+        needUpdate = conf.lastUpdate - Number(p.lastUpdate) > 1000 ? 1 : 0;
+      } else {
+        needUpdate = 1;
+        // return whole configuration
+      }
+      var change = {
+        needUpdate: needUpdate
       };
-      change.configuration = configuration;
-      // TEMP
-      var t = getProgrammingInfo(globaljs.PROG_TEMP, false);
-      if (t) {
-        configuration.minTemp = t.minTemp;
-        configuration.minTempManual = t.minTempManual;
-        change.currentTempProgram = t.currentProgram;
+      if (needUpdate === 1) {
+        var configuration = {
+          status: conf.status,
+          lastUpdate: conf.lastUpdate,
+          tempMeasure: conf.tempMeasure
+        };
+        change.configuration = configuration;
+        // TEMP
+        var t = getProgrammingInfo(globaljs.PROG_TEMP, false);
+        if (t) {
+          configuration.minTemp = t.minTemp;
+          configuration.minTempManual = t.minTempManual;
+          change.currentTempProgram = t.currentProgram;
+        }
+        // LIGHT
+        var l = getProgrammingInfo(globaljs.PROG_LIGHT, false);
+        if (l) {
+          change.currentLightProgram = l.currentProgram;
+        }
       }
-      // LIGHT
-      var l = getProgrammingInfo(globaljs.PROG_LIGHT, false);
-      if (l) {
-        change.currentLightProgram = l.currentProgram;
-      }
+      res.json(httpUtils.createResponse(change));
+    } else {
+      res.json(httpUtils.createResponse(null, 100, "Configuration not Found"));
     }
-    res.json(createResponse(change));
-  } else {
-    res.json(createResponse(null, 100, "Configuration not Found"));
+  } catch (error) {
+    res.json(httpUtils.createResponseKo(500, error));
   }
 };
 
@@ -464,53 +490,57 @@ var checkConfigurationChange = function(req, res) {
  * Read last temperature measurement for all devices available
  */
 var getCurrentData = function(req, res) {
-  if (!checkSecurity(req, res)) return;
-  var options = {
-    collection: globaljs.CONF
-  };
-  var rs = termDBFunction.readCollection(globaljs.termStatdb, options);
-  var json = {};
-  var out = [];
-  if (rs) {
-    var logColl = globaljs.termStatdb.getCollection(globaljs.LOG);
-    for (var i = 0; i < rs.length; i++) {
-      var conf = rs[i];
-      var d = {
-        idDisp: conf.$loki,
-        location: conf.location,
-        temperature: 0,
-        pressure: 0,
-        humidity: 0,
-        light: 0,
-        flagReleTemp: conf.flagReleTemp
-      };
-      if (d.flagReleTemp === 1) {
-        json.tempMeasure = conf.tempMeasure;
-        if (!json.tempMeasure) json.tempMeasure = globaljs.TEMP_LOCAL;
+  if (!httpUtils.checkSecurity(req, res)) return;
+  try {
+    var options = {
+      collection: globaljs.CONF
+    };
+    var rs = termDBFunction.readCollection(globaljs.termStatdb, options);
+    var json = {};
+    var out = [];
+    if (rs) {
+      var logColl = globaljs.termStatdb.getCollection(globaljs.LOG);
+      for (var i = 0; i < rs.length; i++) {
+        var conf = rs[i];
+        var d = {
+          idDisp: conf.$loki,
+          location: conf.location,
+          temperature: 0,
+          pressure: 0,
+          humidity: 0,
+          light: 0,
+          flagReleTemp: conf.flagReleTemp
+        };
+        if (d.flagReleTemp === 1) {
+          json.tempMeasure = conf.tempMeasure;
+          if (!json.tempMeasure) json.tempMeasure = globaljs.TEMP_LOCAL;
+        }
+        var lastLog = logColl
+          .chain()
+          .find({
+            idDisp: d.idDisp
+          })
+          .simplesort("tmsUpd", true)
+          .limit(1)
+          .data();
+        if (lastLog && lastLog.length > 0) {
+          d.temperature = lastLog[0].temperature;
+          d.pressure = lastLog[0].pressure;
+          d.humidity = lastLog[0].humidity;
+          if (conf.flagLightSensor === 1) d.light = lastLog[0].light;
+          d.tmsUpd = lastLog[0].tmsUpd;
+          if (conf.flagReleTemp === 1) json.status = lastLog[0].status;
+        }
+        out.push(d);
       }
-      var lastLog = logColl
-        .chain()
-        .find({
-          idDisp: d.idDisp
-        })
-        .simplesort("tmsUpd", true)
-        .limit(1)
-        .data();
-      if (lastLog && lastLog.length > 0) {
-        d.temperature = lastLog[0].temperature;
-        d.pressure = lastLog[0].pressure;
-        d.humidity = lastLog[0].humidity;
-        if (conf.flagLightSensor === 1) d.light = lastLog[0].light;
-        d.tmsUpd = lastLog[0].tmsUpd;
-        if (conf.flagReleTemp === 1) json.status = lastLog[0].status;
-      }
-      out.push(d);
+      json.temp = out;
+      json.now = new Date().getTime();
+      res.json(httpUtils.createResponse(json));
+    } else {
+      res.json(httpUtils.createResponse(null, 100, "Configuration not Found"));
     }
-    json.temp = out;
-    json.now = new Date().getTime();
-    res.json(createResponse(json));
-  } else {
-    res.json(createResponse(null, 100, "Configuration not Found"));
+  } catch (error) {
+    res.json(httpUtils.createResponseKo(500, error));
   }
 };
 
@@ -518,7 +548,7 @@ var getCurrentData = function(req, res) {
  * Register a wifi client by using its mac address
  */
 var wifiRegisterGet = function(req, res) {
-  if (!checkSecurity(req, res)) return;
+  if (!httpUtils.checkSecurity(req, res)) return;
   var conf = termDBFunction.readConfiguration(
     globaljs.termStatdb,
     req.params.key
@@ -556,7 +586,7 @@ var wifiRegisterGet = function(req, res) {
     var d = new Date();
     conf.timeZoneOffset = d.getTimezoneOffset();
   }
-  res.json(createResponse(conf));
+  res.json(httpUtils.createResponse(conf));
 };
 
 function wifiRegisterInternal(remoteConf, callback) {
@@ -598,7 +628,7 @@ function wifiRegisterInternal(remoteConf, callback) {
     var d = new Date();
     conf.timeZoneOffset = d.getTimezoneOffset();
   }
-  var response = createResponse(conf);
+  var response = httpUtils.createResponse(conf);
   // if (callBack) callBack(response)
   return response;
 }
@@ -607,29 +637,38 @@ function wifiRegisterInternal(remoteConf, callback) {
  * Register a wifi client by using its mac address
  */
 var wifiRegister = function(req, res) {
-  if (!checkSecurity(req, res)) return;
+  if (!httpUtils.checkSecurity(req, res)) return;
   var remoteConf = req.body;
   try {
     res.json(wifiRegisterInternal(remoteConf));
   } catch (error) {
-    res.json(createResponse(null, 500, "Generic error : "+error));
-  }  
+    res.json(httpUtils.createResponseKo(500, "Generic error : " + error));
+  }
 };
 
 /**
  * Cumulate statistics
  */
 var cumulateStatistics = function(req, res, next) {
-  if (!checkSecurity(req, res)) return;
-  termDBStatFunction.cumulateStatistics(globaljs.termStatdb);
-  res.json(createResponse());
+  if (!httpUtils.checkSecurity(req, res)) return;
+
+  try {
+    termDBStatFunction.cumulateStatistics(globaljs.termStatdb);
+    res.json(httpUtils.createResponse());
+  } catch (error) {
+    res.json(httpUtils.createResponseKo(500, error));
+  }
 };
 
 /*
  * Solo funzioni utilizzate via WS da termClient ARDUINO
  */
 function analizeWebsocketRestMessage(ws, message) {
-  var response = createResponse(null, "100", "Nessuna risposta valida");
+  var response = httpUtils.createResponse(
+    null,
+    "100",
+    "Nessuna risposta valida"
+  );
   if (message) {
     var req = JSON.parse(message);
     if (req._operation) {
@@ -639,17 +678,17 @@ function analizeWebsocketRestMessage(ws, message) {
       } else if (req._operation === "checkConfigurationChange") {
       } else if (req._operation === "getCurrentData") {
       } else {
-        response = createResponse(
+        response = httpUtils.createResponse(
           null,
           "103",
           "Operazione " + req._operation + " non riconosciuta"
         );
       }
     } else {
-      response = createResponse(null, "102", "Operazione non valida");
+      response = httpUtils.createResponse(null, "102", "Operazione non valida");
     }
   } else {
-    response = createResponse(null, "101", "Messaggio vuoto");
+    response = httpUtils.createResponse(null, "101", "Messaggio vuoto");
   }
   response._operation = req._operation;
   return JSON.stringify(response);
