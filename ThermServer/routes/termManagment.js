@@ -447,9 +447,9 @@ var checkConfigurationChange = function(req, res) {
     var conf = readConfByKey(req.params.key, true);
     if (conf) {
       var needUpdate = 0;
-      var p = myutils.httpGetParam(req);
-      if (p && p.lastUpdate) {
-        needUpdate = conf.lastUpdate - Number(p.lastUpdate) > 1000 ? 1 : 0;
+      if (req.query.lastUpdate) {
+        needUpdate =
+          conf.lastUpdate - Number(req.query.lastUpdate) > 1000 ? 1 : 0;
       } else {
         needUpdate = 1;
         // return whole configuration
