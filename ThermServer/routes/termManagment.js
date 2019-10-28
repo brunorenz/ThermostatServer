@@ -447,9 +447,14 @@ var checkConfigurationChange = function (req, res) {
     var conf = readConfByKey(req.params.key, true);
     if (conf) {
       var needUpdate = 0;
+      var last = new Date(conf.lastUpdate);
+      last.setMilliseconds(0);
+      var t = last.getTime();
       if (req.query.lastUpdate) {
+        
+
         needUpdate =
-          conf.lastUpdate - Number(req.query.lastUpdate) > 1000 ? 1 : 0;
+          t - Number(req.query.lastUpdate) > 1000 ? 1 : 0;
       } else {
         needUpdate = 1;
         // return whole configuration
@@ -460,7 +465,7 @@ var checkConfigurationChange = function (req, res) {
       if (needUpdate === 1) {
         var configuration = {
           status: conf.status,
-          lastUpdate: conf.lastUpdate,
+          lastUpdate: t,
           tempMeasure: conf.tempMeasure
         };
         change.configuration = configuration;
