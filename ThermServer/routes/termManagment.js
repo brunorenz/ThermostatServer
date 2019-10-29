@@ -9,7 +9,7 @@ var webSocket = require("ws");
 /**
  * Get configuration record by key
  */
-var readConfByKey = function (key, update) {
+var readConfByKey = function(key, update) {
   var idLoki = parseInt(key);
   var conf = termDBFunction.readConfigurationByKey(
     globaljs.termStatdb,
@@ -22,20 +22,20 @@ var readConfByKey = function (key, update) {
 /**
  * Update DB with monitor data
  */
-var processMonitorData = function (logRecord, conf) {
+var processMonitorData = function(logRecord, conf) {
   termDBFunction.updateTermLog(globaljs.termStatdb, conf, logRecord);
 };
 
 /**
  * Update DB with monitor data
  */
-var monitorResp = function (logRecord, conf) {
+var monitorResp = function(logRecord, conf) {
   termDBFunction.updateTermLog(globaljs.termStatdb, conf, logRecord);
 };
 /**
  * Manage callback monitor function
  */
-var startMonitoring = function (conf) {
+var startMonitoring = function(conf) {
   console.log("Monitoring Terminal .." + conf.$loki);
 
   var options = {
@@ -165,7 +165,7 @@ function updateConfigurationTimeStamp(tms) {
 /**
  * Update programming configuration
  */
-var updateTempProgramming = function (req, res) {
+var updateTempProgramming = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   var p = req.body;
   if (p.dati) {
@@ -192,13 +192,13 @@ var updateTempProgramming = function (req, res) {
         globaljs.termStatdb,
         "Save Database after updateTempProgramming completed"
       );
-      myutils.webSocketSendEvent("update");
+      httpUtils.webSocketSendEvent("update");
     }
   }
   res.redirect("back");
 };
 
-var updateConfiguration = function (req, res) {
+var updateConfiguration = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   var p = req.body;
 
@@ -217,7 +217,7 @@ var updateConfiguration = function (req, res) {
       globaljs.termStatdb,
       "Save Database after updateConfiguration completed"
     );
-    myutils.webSocketSendEvent("update");
+    httpUtils.webSocketSendEvent("update");
     // notifyConfigurationChange();
   }
   res.redirect("back");
@@ -226,7 +226,7 @@ var updateConfiguration = function (req, res) {
 /**
  * Monitor temperature info
  */
-var monitor = function (req, res) {
+var monitor = function(req, res) {
   // console.log("Monitor REQ body : " + JSON.stringify(req.body))
   // console.log("Monitor REQ params : " + JSON.stringify(req.params))
   if (!httpUtils.checkSecurity(req, res)) return;
@@ -246,7 +246,7 @@ var monitor = function (req, res) {
 /**
  * Generic read DB collections
  */
-var readDB = function (req, res) {
+var readDB = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   try {
     //var p = myutils.httpGetParam(req);
@@ -280,7 +280,7 @@ var readDB = function (req, res) {
 /**
  * Delete a programming entry
  */
-var removeProgramming = function (req, res) {
+var removeProgramming = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   try {
     var type = -1;
@@ -325,17 +325,13 @@ var removeProgramming = function (req, res) {
 /**
  * Add a new programming entry
  */
-var addProgramming = function (req, res) {
+var addProgramming = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   try {
     var type = -1;
-    var p = myutils.httpGetParam(req);
-    if (p) {
-      if (p.type) {
-        if (p.type === "temp") type = globaljs.PROG_TEMP;
-        else if (p.type === "light") type = globaljs.PROG_LIGHT;
-      }
-    }
+    if (req.query.type === "temp") type = globaljs.PROG_TEMP;
+    else if (req.query.type === "light") type = globaljs.PROG_LIGHT;
+
     var prog = termDBFunction.addProgramming(globaljs.termStatdb, type);
     if (prog) {
       updateConfigurationTimeStamp(prog.lastUpdate);
@@ -358,7 +354,7 @@ var addProgramming = function (req, res) {
  * @param {*} req
  * @param {*} res
  */
-var getProgramming = function (req, res) {
+var getProgramming = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
 
   try {
@@ -408,14 +404,13 @@ var getProgramming = function (req, res) {
 /**
  * Get statistic info
  */
-var getStatistics = function (req, res) {
+var getStatistics = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   try {
     var conf = readConfByKey(req.params.key);
     if (!conf) {
       res.json(httpUtils.createResponse(null, 100, "Configuration not Found"));
     } else {
-
       if (conf) {
         var param = {
           type: "day",
@@ -440,7 +435,7 @@ var getStatistics = function (req, res) {
 /**
  * Check for configuration changes
  */
-var checkConfigurationChange = function (req, res) {
+var checkConfigurationChange = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   // Key is IdDisp
   try {
@@ -489,7 +484,7 @@ var checkConfigurationChange = function (req, res) {
 /**
  * Read last temperature measurement for all devices available
  */
-var getCurrentData = function (req, res) {
+var getCurrentData = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   try {
     var options = {
@@ -547,7 +542,7 @@ var getCurrentData = function (req, res) {
 /**
  * Register a wifi client by using its mac address
  */
-var wifiRegisterGet = function (req, res) {
+var wifiRegisterGet = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   var conf = termDBFunction.readConfiguration(
     globaljs.termStatdb,
@@ -636,7 +631,7 @@ function wifiRegisterInternal(remoteConf, callback) {
 /**
  * Register a wifi client by using its mac address
  */
-var wifiRegister = function (req, res) {
+var wifiRegister = function(req, res) {
   if (!httpUtils.checkSecurity(req, res)) return;
   var remoteConf = req.body;
   try {
@@ -649,7 +644,7 @@ var wifiRegister = function (req, res) {
 /**
  * Cumulate statistics
  */
-var cumulateStatistics = function (req, res, next) {
+var cumulateStatistics = function(req, res, next) {
   if (!httpUtils.checkSecurity(req, res)) return;
 
   try {
@@ -694,7 +689,7 @@ function analizeWebsocketRestMessage(ws, message) {
   return JSON.stringify(response);
 }
 
-var websocketRestWrapper = function (ws, req) {
+var websocketRestWrapper = function(ws, req) {
   var ip = req.connection.remoteAddress;
   console.log("Client IP " + ip);
   ws.on("message", function incoming(message) {
