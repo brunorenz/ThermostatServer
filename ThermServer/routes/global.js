@@ -1,6 +1,6 @@
 var urlDB = "localhost:27017/HTTPLog";
 
-var serverPort = 8100;
+var serverPort = 8102;
 var dbName = "/DB/termStat.db";
 var termStatdb;
 const CONF = "conf";
