@@ -1,0 +1,52 @@
+Gestione Termostato
+
+- checkThermostatStatus  
+	- controlla temperatura , programmazione ed imposta rele termostato
+	- chiamato da timer
+
+	- richiama
+		computeTemperatureReleStatus
+		shellySendCommand
+		
+
+
+- computeTemperatureReleStatus
+	- recupera temperatura nelle vaire modalità permesse (manuale, automatica)
+	- 
+
+
+- computeLightReleStatus
+
+
+
+- updateMotionReleStatus (input motion event from sensor)
+	input
+	request : {"macAddress":"25:B6:2E:32:F4:2C","motion": 0}
+	
+	call
+		readReleMotionLight (recupera configurazione rele associato a sensore)
+		readProgramming (recupera prgramamzione attuale di tipo Luce)
+		compute
+
+
+- processMotion ( gestire accensione relativo rele)
+	input 
+	request : {"macAddress":"25:B6:2E:32:F4:2C","motion": 0}
+	
+	call: 
+		
+
+
+- thermManagerMQ
+  - monitorSensorData
+	- request: {"macAddress":"25:B6:2E:32:F4:2C","temperature": 19.257999,"pressure": 1002.204224,"light": 51.894531,"humidity": 49.193359,"numSurveys":5}
+  - processMotion
+	- request : {"macAddress":"25:B6:2E:32:F4:2C","motion": 0}
+  - processShellyMessage
+	  relay ->
+		request :  {on/off}
+		shellyCommand = { command: config.TypeShellyCommand.RELAY, deviceid: shellyId};
+
+		call : monitorReleData
+
+ 

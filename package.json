@@ -1,0 +1,20 @@
+{
+	"name": "thermostat-server",
+	"version": "2.0.0",
+	"private": true,
+	"scripts": {
+		"start": "node therm.js"
+	},
+	"dependencies": {
+		"express": "4.17.1",
+		"mongodb": "3.6.3",
+		"moment": "2.29.1",
+		"morgan": "1.10.0",
+		"body-parser": "1.19.0",
+		"errorhandler": "1.5.1",
+		"mqtt": "4.2.4",
+		"ws": "7.3.1",
+		"network-list": "1.1.5",
+		"jsonwebtoken": "8.5.1"
+	}
+}

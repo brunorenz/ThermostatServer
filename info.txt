@@ -1,0 +1,53 @@
+<> ThermostatGUIClient
+
+
+<> ThermostatServerV2 (SRV)
+- Configuration managment
+    - arduino themperature monitor
+    - esp8266 themperature monitor
+    - shelly rele
+        - type  themperature / light /other
+    - sonoff rele
+        - type  themperature / light /other
+
+
+
+
+<> ArduinoThermostatClient (AR) FULL
+
+workflow
+AR -> connect and send will (MAC address)
+AR -> send WiFiregister
+AR -> send monitor
+
+AR <- receive update configuration
+AR <- receive medium themperature
+
+SRV -> send UpdateCFG (using MAC as key)
+SRV -> send themperature update if more then one AR are present and meausure type is set with medium themperature
+SRV -> send on/off to shelly
+
+<> ArduinoThermostatClient (AR) Light
+
+AR -> connect and send will (MAC address)
+AR -> send WiFiregister
+AR -> send monitor
+
+
+<> SHELLY 
+
+SH <- on/off
+
+<> SONOFF
+
+SH <- on/off
+
+
+
+
+
+
+
+
+
+
