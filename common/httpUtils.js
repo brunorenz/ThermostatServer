@@ -1,6 +1,6 @@
 var http = require("http");
-var webSocket = require("ws");
-var globaljs = require("../global");
+//var webSocket = require("ws");
+//var globaljs = require("../global");
 
 var httpPostJSON = function (options, postData, mycallback, param) {
   var headers = {
@@ -76,53 +76,6 @@ var httpGetJSON = function (options, mycallback, param) {
   });
 };
 
-var webSocketSendEvent = function (event) {
-  var map = globaljs.WSS;
-  if (map) {
-    map.forEach(function f(entry) {
-      var ws = entry.value.ws;
-      console.log("CLIENT " + entry.key + " STATE : " + ws.readyState);
-      if (ws.readyState === webSocket.OPEN) {
-        console.log("Send EVENT " + event);
-        ws.send(event);
-      } else {
-        console.log("Pospone EVENT " + event);
-        entry.value.command = event;
-        mapPut(map, entry.key, entry.value);
-      }
-    });
-  }
-};
-
-var webSocketConnection = function (ws, req) {
-  var s = globaljs.WSS;
-  if (!s) {
-    s = [];
-    globaljs.WSS = s;
-  }
-
-  var ip = req.connection.remoteAddress;
-  var entry = mapGet(s, ip);
-  if (!entry) {
-    console.log("WEBSOCKET (ADD) connection from client ip " + ip);
-    entry = {
-      ws: ws,
-      command: null,
-    };
-    mapPut(s, ip, entry);
-  } else {
-    console.log("WEBSOCKET (UPDATE) connection from client ip " + ip);
-    entry.ws = ws;
-    if (entry.command && entry.command !== null) {
-      ws.send(entry.command);
-      entry.command = null;
-    }
-    mapPut(s, ip, entry);
-  }
-
-  console.log("WEBSOCKET connection from client ip " + ip);
-};
-
 /**
  * Create errore response code
  * @param {*} errorCode
@@ -167,8 +120,6 @@ let getFunctionFromUrl = function (url) {
 
 module.exports.createResponse = createResponse;
 module.exports.createResponseKo = createResponseKo;
-module.exports.webSocketSendEvent = webSocketSendEvent;
-module.exports.webSocketConnection = webSocketConnection;
 module.exports.httpGetJSON = httpGetJSON;
 module.exports.httpPostJSON = httpPostJSON;
 module.exports.getFunctionFromUrl = getFunctionFromUrl;

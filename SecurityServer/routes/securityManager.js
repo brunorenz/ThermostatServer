@@ -1,5 +1,6 @@
-var httpManager = require("./common/serverHTTPManager");
-var httpSecurityManager = require("./common/httpSecurityManager");
+var httpManager = require("../../Common/serverHTTPManager");
+var httpSecurityManager = require("./httpSecurityManager");
+var configuration = require("./configuration");
 
 var mongoSec = null;
 
@@ -72,3 +73,10 @@ let securityHttpProxy = function (httpRequest, httpResponse) {
   httpManager.proxyManager(httpRequest, httpResponse, serviceMap);
 };
 exports.securityHttpProxy = securityHttpProxy;
+
+let initConfigurationServer = function (connection) {
+  configuration.mongoConSec = connection.db(configuration.DBNameSec);
+  console.log("Created connection for DB  : " + configuration.mongoConSec.databaseName);
+};
+
+exports.initConfigurationServer = initConfigurationServer;

@@ -4,7 +4,7 @@ var fs = require("fs");
 var bodyParser = require("body-parser");
 var morgan = require("morgan");
 var errorhandler = require("errorhandler");
-var httpSecurityManager = require("./routes/common/httpSecurityManager");
+var httpSecurityManager = require("./routes/httpSecurityManager");
 var httpManager = require("./routes/securityManager");
 var app = express();
 
@@ -18,7 +18,7 @@ function getNextTime() {
   return millis;
 }
 
-var logPath = path.join(__dirname, "logs");
+var logPath = path.join(__dirname, "../logs");
 
 if (!fs.existsSync(logPath)) {
   fs.mkdirSync(logPath);
