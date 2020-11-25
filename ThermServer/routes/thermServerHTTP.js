@@ -1,7 +1,6 @@
 var config = require("./config");
-var httpUtils = require("./utils/httpUtils");
+var httpUtils = require("../../Common/httpUtils");
 var thermManager = require("./thermManager");
-var security = require("./securityManager");
 
 /**
  * Send JSON response
@@ -14,8 +13,7 @@ var genericHTTPPostService = function (options) {
       if (options.errorCode != "undefined") errorCode = options.errorCode;
       res.json(httpUtils.createResponseKo(errorCode, options.error));
     } else {
-      if (options.response)
-        res.json(httpUtils.createResponse(options.response));
+      if (options.response) res.json(httpUtils.createResponse(options.response));
       else res.json(httpUtils.createResponse(null, 100, "Record not Found"));
     }
   }
@@ -43,26 +41,13 @@ var validatePostRequest = function (httpRequest, httpResponse) {
     // check request encode
     var contype = httpRequest.headers["content-type"];
     console.log("Request ContentType : " + contype);
-    if (!contype || contype.indexOf("application/json") >= 0)
-      options.request = httpRequest.body;
+    if (!contype || contype.indexOf("application/json") >= 0) options.request = httpRequest.body;
     else options.request = httpRequest.body.data;
   } catch (error) {
     httpResponse.json(httpUtils.createResponseKo(500, error));
   }
   return options;
 };
-
-/*
-exports.monitor = function (httpRequest, httpResponse) {
-  var options = validatePostRequest(httpRequest, httpResponse);
-  try {
-    options.callback.push(genericHTTPPostService);
-    thermManager.monitorInternal(options);
-  } catch (error) {
-    httpResponse.json(httpUtils.createResponseKo(500, error));
-  }
-};
-*/
 
 /**
  * Update Programming Record
@@ -200,13 +185,6 @@ let proxyPromise = function (fn, httpRequest, httpResponse) {
  */
 exports.updateConfiguration = function (httpRequest, httpResponse) {
   proxyPromise(service.updateConfigurationGUI, httpRequest, httpResponse);
-  // var options = validatePostRequest(httpRequest, httpResponse);
-  // try {
-  //   options.callback.push(genericHTTPPostService);
-  //   thermManager.updateConfigurationGUI(options);
-  // } catch (error) {
-  //   httpResponse.json(httpUtils.createResponseKo(500, error));
-  // }
 };
 
 exports.monitorSensorData = function (httpRequest, httpResponse) {
@@ -237,21 +215,6 @@ exports.shellyRegister = function (httpRequest, httpResponse) {
   proxyPromise(service.shellyRegister, httpRequest, httpResponse);
 };
 
-// exports.updateConfigurationN = function(httpRequest, httpResponse) {
-//   var options = validatePostRequest(httpRequest, httpResponse);
-//   if (options != null) {
-//     options.usePromise = true;
-//     new Promise(function(resolve, reject) {
-//       thermManager.updateConfiguration(options, resolve, reject);
-//     })
-//       .then(function(options) {
-//         genericHTTPPostService(options);
-//       })
-//       .catch(function(error) {
-//         httpResponse.json(httpUtils.createResponseKo(500, error));
-//       });
-//   }
-// };
 /**
  * Read Configuration
  */
@@ -261,10 +224,8 @@ exports.getConfiguration = function (httpRequest, httpResponse) {
     try {
       var type = config.TypeProgramming.TEMP;
       if (httpRequest.query.type) {
-        if (httpRequest.query.type === "temp")
-          type = config.TypeProgramming.TEMP;
-        else if (httpRequest.query.type === "light")
-          type = config.TypeProgramming.LIGHT;
+        if (httpRequest.query.type === "temp") type = config.TypeProgramming.TEMP;
+        else if (httpRequest.query.type === "light") type = config.TypeProgramming.LIGHT;
       }
       options.action = config.TypeAction.READ;
       options.callback.push(genericHTTPPostService);
@@ -330,20 +291,20 @@ exports.getProgramming = function (httpRequest, httpResponse) {
   }
 };
 
-/**
- * Login function
- */
-exports.login = function (httpRequest, httpResponse) {
-  var options = validatePostRequest(httpRequest, httpResponse);
-  if (options != null) {
-    options.callback.push(genericHTTPPostService);
-    let input = JSON.parse(options.request);
-    console.log(JSON.stringify(input));
-    security.readUser(options);
-  } else {
-    genericHTTPPostService(options, "Generic error");
-  }
-};
+// /**
+//  * Login function
+//  */
+// exports.login = function (httpRequest, httpResponse) {
+//   var options = validatePostRequest(httpRequest, httpResponse);
+//   if (options != null) {
+//     options.callback.push(genericHTTPPostService);
+//     let input = JSON.parse(options.request);
+//     console.log(JSON.stringify(input));
+//     security.readUser(options);
+//   } else {
+//     genericHTTPPostService(options, "Generic error");
+//   }
+// };
 
 exports.getReleStatistics = function (httpRequest, httpResponse) {
   var options = validateGetRequest(httpRequest, httpResponse);

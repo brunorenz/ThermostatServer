@@ -1,10 +1,10 @@
 const globaljs = require("./global");
 const config = require("./config");
-const myutils = require("./utils/myutils");
+//const utils = require("../../Common/myutils");
 const mongoDBMgr = require("./mongoDBManager");
 const http = require("http");
 
-var getIndexProgram = function(progRecord, idProg) {
+var getIndexProgram = function (progRecord, idProg) {
   if (typeof idProg === "undefined") idProg = progRecord.activeProg;
   let programming = progRecord.programming;
   let index = 0;
@@ -17,13 +17,10 @@ var getIndexProgram = function(progRecord, idProg) {
   return index;
 };
 
-var getStatusByProgram = function(options) {
+var getStatusByProgram = function (options) {
   let shellyCommand = options.shellyCommand;
   let newStatus = shellyCommand.status;
-  if (
-    shellyCommand.status === config.TypeStatus.MANUAL ||
-    shellyCommand.status === config.TypeStatus.AUTO
-  ) {
+  if (shellyCommand.status === config.TypeStatus.MANUAL || shellyCommand.status === config.TypeStatus.AUTO) {
     let prog = options.response;
     if (prog.idProgType === config.TypeProgramming.TEMP) {
       let themp = shellyCommand.temperature;
@@ -49,32 +46,17 @@ var getStatusByProgram = function(options) {
         console.log("Giorno : " + day + " - Ora " + minsec);
         for (let ix = 0; ix < 7; ix++)
           if (currentProg.dayProgramming[ix].idDay === day)
-            for (
-              let iy = 0;
-              iy < currentProg.dayProgramming[ix].prog.length;
-              iy++
-            ) {
+            for (let iy = 0; iy < currentProg.dayProgramming[ix].prog.length; iy++) {
               let entry = currentProg.dayProgramming[ix].prog[iy];
               if (minsec >= entry.timeStart && minsec <= entry.timeEnd) {
-                console.log(
-                  "Trovata fascia oraria da " +
-                    entry.timeStart +
-                    " a " +
-                    entry.timeEnd
-                );
+                console.log("Trovata fascia oraria da " + entry.timeStart + " a " + entry.timeEnd);
                 minTemp = entry.minTemp;
                 break;
               }
             }
       }
-      console.log(
-        "Temperatura calcolata : " +
-          temperature +
-          " - Di riferimento " +
-          minTemp
-      );
-      newStatus =
-        temperature < minTemp ? config.TypeStatus.ON : config.TypeStatus.OFF;
+      console.log("Temperatura calcolata : " + temperature + " - Di riferimento " + minTemp);
+      newStatus = temperature < minTemp ? config.TypeStatus.ON : config.TypeStatus.OFF;
     } else {
       // programamzione luce
     }
@@ -82,7 +64,7 @@ var getStatusByProgram = function(options) {
   return newStatus;
 };
 
-var shellySendCommandOLD = function(options) {
+var shellySendCommandOLD = function (options) {
   //
   //     globaljs.mqttCli.publish(topic, JSON.stringify(msg));
   if (typeof options.shellyCommand !== "undefined") {
@@ -99,7 +81,7 @@ var shellySendCommandOLD = function(options) {
   } else console.error("Nessun comando da inviare a dispositivi Shelly!");
 };
 
-var shellySendCommand = function(options) {
+var shellySendCommand = function (options) {
   //
   //     globaljs.mqttCli.publish(topic, JSON.stringify(msg));
   if (typeof options.shellyCommand !== "undefined") {
@@ -117,22 +99,20 @@ var shellySendCommand = function(options) {
 
 exports.shellySendCommand = shellySendCommand;
 
-var callShellySetting = function(options) {
+var callShellySetting = function (options) {
   const httpOptions = {
     hostname: options.ip,
     port: 80,
     path: "/settings",
     method: "GET",
-    headers: { Authorization: globaljs.basicAuthShelly }
+    headers: { Authorization: globaljs.basicAuthShelly },
   };
   var output = "";
-  const req = http.request(httpOptions, res => {
+  const req = http.request(httpOptions, (res) => {
     console.log("HTTP response code " + res.statusCode);
-    res.on("end", end => {
+    res.on("end", (end) => {
       let obj = JSON.parse(output);
-      console.log(
-        "Shelly device found at " + options.ip + " MQTT ID : " + obj.mqtt.id
-      );
+      console.log("Shelly device found at " + options.ip + " MQTT ID : " + obj.mqtt.id);
       var input = config.getConfigurationRecord(options.mac);
       input.deviceType = config.TypeDeviceType.SHELLY;
       input.ipAddress = options.ip;
@@ -143,71 +123,52 @@ var callShellySetting = function(options) {
         callback: [],
         register: true,
         update: true,
-        createIfNull: true
+        createIfNull: true,
       };
 
       mongoDBMgr.readConfiguration(dbOptions);
     });
-    res.on("data", data => {
+    res.on("data", (data) => {
       output += data;
     });
   });
-  req.setTimeout(2000, function() {
-    console.log(
-      ">> TIMEOUT occurred calling " + httpOptions.ip + httpOptions.path
-    );
+  req.setTimeout(2000, function () {
+    console.log(">> TIMEOUT occurred calling " + httpOptions.ip + httpOptions.path);
     req.abort();
   });
-  req.on("error", error => {
-    console.log(
-      "Http error calling " + httpOptions.ip + httpOptions.path + " : " + error
-    );
+  req.on("error", (error) => {
+    console.log("Http error calling " + httpOptions.ip + httpOptions.path + " : " + error);
   });
   req.end();
 };
 
-var updateShellyConfiguration = function(options, rc) {
+var updateShellyConfiguration = function (options, rc) {
   console.log("IP : " + options.ip + " - HTTP status code " + rc);
   if (rc === 200) {
     // update mongodb
-    console.log(
-      "Update shelly configuration for IP/MAC : " +
-        options.ip +
-        " - " +
-        options.mac
-    );
+    console.log("Update shelly configuration for IP/MAC : " + options.ip + " - " + options.mac);
     callShellySetting(options);
   } else {
-    console.log(
-      "IP/MAC : " + options.ip + " - " + options.mac + " is not a shelly device"
-    );
+    console.log("IP/MAC : " + options.ip + " - " + options.mac + " is not a shelly device");
   }
 };
 
-exports.updateShellyConfiguration = function(options) {
+exports.updateShellyConfiguration = function (options) {
   const httpOptions = {
     hostname: options.ip,
     port: 80,
     path: "/shelly",
-    method: "GET"
+    method: "GET",
   };
-  const req = http.request(httpOptions, res => {
+  const req = http.request(httpOptions, (res) => {
     updateShellyConfiguration(options, res.statusCode);
   });
-  req.setTimeout(2000, function() {
-    console.log(
-      ">> TIMEOUT occurred calling " + httpOptions.ip + httpOptions.path
-    );
+  req.setTimeout(2000, function () {
+    console.log(">> TIMEOUT occurred calling " + httpOptions.ip + httpOptions.path);
     req.abort();
   });
-  req.on("error", error => {
-    console.log(
-      ">> ERROR occurred calling " +
-        httpOptions.ip +
-        httpOptions.path +
-        " : " +
-        error
-    );
+  req.on("error", (error) => {
+    console.log(">> ERROR occurred calling " + httpOptions.ip + httpOptions.path + " : " + error);
   });
   req.end();
 };

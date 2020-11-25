@@ -1,6 +1,7 @@
-// override console.lg
-var myutils = require("./common/myutils");
+var myutils = require("./Common/myutils");
 var config = require("./ThermServer/routes/config");
+var globaljs = require("./ThermServer/routes/global");
+var securityManager = require("./SecurityServer/routes/securityManager");
 
 console.log = (function () {
   var orig = console.log;
@@ -14,14 +15,15 @@ console.log = (function () {
 })();
 
 var express = require("express");
-var globaljs = require("./ThermServer/routes/global");
-var assert = require("assert");
+
 var http = require("http");
 var app = express();
 
 var ep_app = require("./ThermServer/thermServer");
 app.use("/therm", ep_app);
 
+var ep_app2 = require("./SecurityServer/securityServer");
+app.use("/security", ep_app2);
 
 var port = process.env.PORT || globaljs.SERVER_PORT;
 
@@ -147,6 +149,9 @@ var connectFunc = function (err, db) {
   } else {
     console.log("Connected successfully to MongoDB server : " + globaljs.urlDB);
     globaljs.mongoCon = db.db(globaljs.DBName);
+    console.log("Created connection for DB  : " + globaljs.mongoCon.databaseName);
+    securityManager.initConfigurationServer(db);
+
     mainTask(globaljs.mongoCon);
   }
 };
@@ -167,7 +172,7 @@ function mainTask(httpDBMo) {
   // Setup Timer
   console.log("Setup TimeOut service");
   setupTimer();
-  
+
   //Start initial task
   console.log("Run Initial task");
   setupInitialTask();

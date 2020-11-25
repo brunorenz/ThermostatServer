@@ -1,20 +1,16 @@
 var express = require("express");
 var path = require("path");
 var fs = require("fs");
-//var favicon = require("serve-favicon");
 var bodyParser = require("body-parser");
 var morgan = require("morgan");
 var errorhandler = require("errorhandler");
-var httpUtils = require("../common/httpUtils");
-var securityManager = require("./routes/securityManager");
+var httpSecurityManager = require("../SecurityServer/routes/httpSecurityManager");
 var termManagment = require("./routes/thermServerHTTP");
 var app = express();
 
 function getNextTime() {
   var now = new Date();
-  var millis =
-    new Date(now.getFullYear(), now.getMonth(), now.getDate(), 02, 0, 0, 0) -
-    now;
+  var millis = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 02, 0, 0, 0) - now;
   if (millis < 0) {
     millis += 86400000;
   }
@@ -22,23 +18,22 @@ function getNextTime() {
   return millis;
 }
 
-var logPath = path.join(__dirname, "logs");
+var logPath = path.join(__dirname, "../logs");
 
 if (!fs.existsSync(logPath)) {
   fs.mkdirSync(logPath);
 }
 
 var accessLogStream = fs.createWriteStream(logPath + "/ThermServer.log", {
-  flags: "a"
+  flags: "a",
 });
 app.use(
-  morgan(
-    ":date :res[content-length] :remote-addr :method :url - RC: :status :response-time ms",
-    { stream: accessLogStream }
-  )
+  morgan(":date :res[content-length] :remote-addr :method :url - RC: :status :response-time ms", {
+    stream: accessLogStream,
+  })
 );
 
-app.use(securityManager.checkBasicSecurity);
+app.use(httpSecurityManager.checkBasicSecurity);
 
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -70,39 +65,18 @@ app.get("/rest/getSensorStatistics", termManagment.getSensorStatistics);
 app.get("/rest/getTemperature", termManagment.updateTemperatureReleStatus);
 
 // POST METHOD
-app.post("/rest/login", urlencodedParser, termManagment.login);
+//app.post("/rest/login", urlencodedParser, termManagment.login);
 
-app.post(
-  "/rest/shellyRegister",
-  urlencodedParser,
-  termManagment.shellyRegister
-);
+app.post("/rest/shellyRegister", urlencodedParser, termManagment.shellyRegister);
 
 app.post("/rest/updateStatus", urlencodedParser, termManagment.updateStatus);
 
-app.post(
-  "/rest/updateConfiguration",
-  urlencodedParser,
-  termManagment.updateConfiguration
-);
-app.post(
-  "/rest/addProgramming",
-  urlencodedParser,
-  termManagment.addProgramming
-);
-app.post(
-  "/rest/deleteProgramming",
-  urlencodedParser,
-  termManagment.deleteProgramming
-);
+app.post("/rest/updateConfiguration", urlencodedParser, termManagment.updateConfiguration);
+app.post("/rest/addProgramming", urlencodedParser, termManagment.addProgramming);
+app.post("/rest/deleteProgramming", urlencodedParser, termManagment.deleteProgramming);
 
-app.post(
-  "/rest/updateProgramming",
-  urlencodedParser,
-  termManagment.updateProgramming
-);
+app.post("/rest/updateProgramming", urlencodedParser, termManagment.updateProgramming);
 
 app.post("/rest/monitor", jsonParser, termManagment.monitorSensorData);
-
 
 module.exports = app;

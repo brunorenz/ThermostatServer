@@ -1,6 +1,6 @@
 const globaljs = require("./global");
 const config = require("./config");
-const utils = require("./utils/myutils");
+const utils = require("../../Common/myutils");
 const mongoDBMgr = require("./mongoDBManager");
 const mongoDBStatMgr = require("./mongoDBStatManager");
 const shellyMgr = require("./shellyManager");
@@ -10,12 +10,10 @@ const timerMgr = require("./timersManager");
 var callback = function (options, error) {
   if (error) options.error = error;
   let useCallBack = true;
-  if (typeof options.usePromise != "undefined")
-    useCallBack = !options.usePromise;
+  if (typeof options.usePromise != "undefined") useCallBack = !options.usePromise;
   if (useCallBack) {
     if (options.callback && options.callback.length > 0) {
-      if (typeof options.callbackIndex === "undefined")
-        options.callbackIndex = 0;
+      if (typeof options.callbackIndex === "undefined") options.callbackIndex = 0;
       if (options.callbackIndex < options.callback.length) {
         options.callback[options.callbackIndex++](options);
       }
@@ -45,8 +43,7 @@ exports.manageProgramming = function (options, resolveIn, rejectIn) {
         mongoDBMgr.readProgramming(options, resolve, reject);
       })
         .then(function (options) {
-          if (options.action == config.TypeAction.ADD)
-            mongoDBMgr.addProgramming(options, resolveIn, rejectIn);
+          if (options.action == config.TypeAction.ADD) mongoDBMgr.addProgramming(options, resolveIn, rejectIn);
           else if (options.action == config.TypeAction.DELETE)
             mongoDBMgr.deleteProgramming(options, resolveIn, rejectIn);
         })
@@ -218,9 +215,7 @@ let shellyRegister = function (options, resolveIn, rejectIn) {
           if (entry.alive) {
             nAlive++;
             var mac = entry.mac != null ? entry.mac.toUpperCase() : "N/A";
-            console.log(
-              "Chech for IP address " + entry.ip + " with mac address " + mac
-            );
+            console.log("Chech for IP address " + entry.ip + " with mac address " + mac);
             var outOptions = {
               ip: entry.ip,
               mac: mac,
@@ -266,9 +261,7 @@ let shellyRegisterInternal = function (options) {
         if (entry.alive) {
           nAlive++;
           var mac = entry.mac != null ? entry.mac.toUpperCase() : "N/A";
-          console.log(
-            "Chech for IP address " + entry.ip + " with mac address " + mac
-          );
+          console.log("Chech for IP address " + entry.ip + " with mac address " + mac);
           var outOptions = {
             ip: entry.ip,
             mac: mac,
@@ -476,10 +469,7 @@ let readReleMotionLight = function (options) {
     let query = {
       collection: globaljs.mongoCon.collection(globaljs.MONGO_CONF),
       filter: {
-        $and: [
-          { primarySensor: options.request.macAddress },
-          { flagReleLight: 1 },
-        ],
+        $and: [{ primarySensor: options.request.macAddress }, { flagReleLight: 1 }],
       },
       selectOne: false,
     };
@@ -613,12 +603,10 @@ let checkThermostatStatus = function (options, resolveIn, rejectIn) {
           status = config.TypeStatus.ON;
           break;
         case config.TypeStatus.AUTO:
-          if (options.response.temperature < options.response.minTempAuto)
-            status = config.TypeStatus.ON;
+          if (options.response.temperature < options.response.minTempAuto) status = config.TypeStatus.ON;
           break;
         case config.TypeStatus.MANUAL:
-          if (options.response.temperature < options.response.minTempManual)
-            status = config.TypeStatus.ON;
+          if (options.response.temperature < options.response.minTempManual) status = config.TypeStatus.ON;
           break;
       }
       options.shellyCommand = {
@@ -776,9 +764,7 @@ let evaluateLight = function (options, resolveIn, rejectIn) {
     minLightAuto: currentProg.minLight,
   };
   if (sensor.length > 0) {
-    console.log(
-      "Location " + sensor[0].location + " - Luce " + sensor[0].currentLight
-    );
+    console.log("Location " + sensor[0].location + " - Luce " + sensor[0].currentLight);
     if (
       typeof options.request != "undefined" &&
       typeof options.request.macAddress != "undefined" &&
@@ -810,21 +796,11 @@ let evaluateTemperature = function (options, resolveIn, rejectIn) {
   console.log("Current program : " + currentProg.name);
   let primarySensor = conf.primarySensor;
   if (sensor && sensor.length > 0) {
-    console.log(
-      "trovati " + sensor.length + " sensori che misurano temperatura"
-    );
+    console.log("trovati " + sensor.length + " sensori che misurano temperatura");
     for (let ix = 0; ix < sensor.length; ix++) {
-      if (primarySensor === sensor[ix].macAddress)
-        primarySensor = sensor[ix].location;
-      console.log(
-        "Location " +
-          sensor[ix].location +
-          " - Temperatura " +
-          sensor[ix].currentTemperature
-      );
-      console.log(
-        "Location " + sensor[ix].location + " - Luce " + sensor[ix].currentLight
-      );
+      if (primarySensor === sensor[ix].macAddress) primarySensor = sensor[ix].location;
+      console.log("Location " + sensor[ix].location + " - Temperatura " + sensor[ix].currentTemperature);
+      console.log("Location " + sensor[ix].location + " - Luce " + sensor[ix].currentLight);
     }
   }
   // get current program
@@ -851,12 +827,7 @@ let evaluateTemperature = function (options, resolveIn, rejectIn) {
   //     }
   let prioritySensor = null;
   if (autoRecord != null) {
-    console.log(
-      "Trovata fascia oraria da " +
-        autoRecord.timeStart +
-        " a " +
-        autoRecord.timeEnd
-    );
+    console.log("Trovata fascia oraria da " + autoRecord.timeStart + " a " + autoRecord.timeEnd);
     minTempAuto = autoRecord.minTemp;
     prioritySensor = autoRecord.priorityDisp;
   }
@@ -871,10 +842,7 @@ let evaluateTemperature = function (options, resolveIn, rejectIn) {
         temperature = getTemperature(sensor);
         break;
       case config.TypeMeasure.PRIORITY:
-        temperature = getTemperature(
-          sensor,
-          autoRecord != null ? autoRecord.priorityDisp : ""
-        );
+        temperature = getTemperature(sensor, autoRecord != null ? autoRecord.priorityDisp : "");
         break;
     }
   }
@@ -885,8 +853,7 @@ let evaluateTemperature = function (options, resolveIn, rejectIn) {
     minTempManual: minTempManual,
     minTempAuto: minTempAuto,
   };
-  if (prioritySensor != null && prioritySensor != "")
-    options.response.prioritySensor = prioritySensor;
+  if (prioritySensor != null && prioritySensor != "") options.response.prioritySensor = prioritySensor;
   resolveIn(options);
 };
 
