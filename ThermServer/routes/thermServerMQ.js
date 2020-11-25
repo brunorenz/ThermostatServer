@@ -1,7 +1,7 @@
 //var mqtt = require("mqtt");
 var globaljs = require("./global");
 var config = require("./config");
-var httpUtils = require("./utils/httpUtils");
+var httpUtils = require("../../Common/httpUtils");
 var thermManager = require("./thermManager");
 
 /**
@@ -9,10 +9,7 @@ var thermManager = require("./thermManager");
  */
 exports.subscribeTopic = function (mqClient, topic) {
   mqClient.subscribe(topic, function (err) {
-    if (err)
-      console.error(
-        "**ERROR : Subscribe to topic " + topic + " failed : " + err
-      );
+    if (err) console.error("**ERROR : Subscribe to topic " + topic + " failed : " + err);
     else console.log("Subscribe to topic " + topic + " successfull");
   });
 };
@@ -22,9 +19,7 @@ exports.subscribeTopic = function (mqClient, topic) {
  */
 exports.startMQListening = function (mqClient) {
   mqClient.on("message", function (topic, message) {
-    console.log(
-      "Message received from topic " + topic + " : message : " + message
-    );
+    console.log("Message received from topic " + topic + " : message : " + message);
     try {
       if (topic === globaljs.MQTopicWifi) {
         let input = JSON.parse(message);
@@ -85,12 +80,7 @@ exports.startMQListening = function (mqClient) {
         console.log("Messaggio non gestito per topic " + topic);
       }
     } catch (error) {
-      console.error(
-        "**ERROR : Error while processing message on topic " +
-          topic +
-          " : " +
-          error
-      );
+      console.error("**ERROR : Error while processing message on topic " + topic + " : " + error);
     }
   });
 };
