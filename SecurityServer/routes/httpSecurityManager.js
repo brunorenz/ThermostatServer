@@ -28,30 +28,6 @@ let verifyToken = function (token) {
   return true;
 };
 
-// //exports.verifyToken = verify;
-
-// exports.readUser = function (options, resolve, reject) {
-//   // mongodb
-//   let user = JSON.parse(options.request);
-//   console.log("USER " + typeof user);
-//   console.log("EMAIL " + typeof user.email);
-//   if (typeof user != "undefined" && typeof user.email != "undefined") {
-//     if (user.email === "65bruno@gmail.com" && user.password === "pippo") {
-//       let userOut = {
-//         email: user.email,
-//         name: "Bruno",
-//       };
-//       let token = sign(userOut);
-//       userOut.token = token;
-//       options.response = userOut;
-//     } else {
-//       options.errorCode = 200;
-//       options.error = "Utente o Password errati!";
-//     }
-//   }
-//   resolve(options);
-// };
-
 /**
  * Check basic authentication from http header
  */
@@ -113,6 +89,7 @@ exports.checkBasicSecurity = function (req, res, next) {
       next();
     } else {
       console.log("Check BASIC Security, JWT and set CORS : Fails!");
+      res.sendStatus(500, "Check BASIC Security, JWT and set CORS : Fails!");
     }
   } else next();
 };

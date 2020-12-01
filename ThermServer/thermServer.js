@@ -5,6 +5,7 @@ var bodyParser = require("body-parser");
 var morgan = require("morgan");
 var errorhandler = require("errorhandler");
 var httpSecurityManager = require("../SecurityServer/routes/httpSecurityManager");
+var httpProxy = require("./routes/thermHttpProxy");
 var termManagment = require("./routes/thermServerHTTP");
 var app = express();
 
@@ -48,6 +49,11 @@ if ("development" === app.get("env")) {
 
 // DB
 console.log("Working directory is " + __dirname);
+
+// nuovi metodi
+app.post("/rest/p/*", jsonParser, httpProxy.thermHttpProxy);
+app.post("/rest/pu/*", urlencodedParser, httpProxy.thermHttpProxy);
+app.get("/rest/g/*", httpProxy.thermHttpProxy);
 
 // Gestione Termostato
 // GET METHOD
