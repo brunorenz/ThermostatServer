@@ -1,7 +1,8 @@
+logs
 ThermServer/logs
 ThermServer/DB
 node_modules
 build
 npm-debug.log
-.env
+
 .DS_Store
