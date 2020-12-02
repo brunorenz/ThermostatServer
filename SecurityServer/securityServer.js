@@ -2,6 +2,7 @@ var express = require("express");
 var path = require("path");
 var fs = require("fs");
 var bodyParser = require("body-parser");
+var cookieParser = require("cookie-parser");
 var morgan = require("morgan");
 var errorhandler = require("errorhandler");
 var httpSecurityManager = require("./routes/httpSecurityManager");
@@ -33,6 +34,7 @@ app.use(
   })
 );
 
+app.use(cookieParser());
 app.use(httpSecurityManager.checkBasicSecurity);
 
 var jsonParser = bodyParser.json();

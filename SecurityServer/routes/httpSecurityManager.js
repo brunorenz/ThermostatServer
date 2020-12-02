@@ -89,7 +89,7 @@ exports.checkBasicSecurity = function (req, res, next) {
       next();
     } else {
       console.log("Check BASIC Security, JWT and set CORS : Fails!");
-      res.sendStatus(500, "Check BASIC Security, JWT and set CORS : Fails!");
+      //res.sendStatus(500, "Check BASIC Security, JWT and set CORS : Fails!");
     }
   } else next();
 };

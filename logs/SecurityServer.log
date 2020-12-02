@@ -39,3 +39,11 @@ Tue, 01 Dec 2020 16:31:42 GMT 4 ::1 OPTIONS /security/rest/p/login - RC: 200 0.8
 Tue, 01 Dec 2020 16:31:43 GMT 87 ::1 POST /security/rest/p/login - RC: 200 69.416 ms
 Tue, 01 Dec 2020 16:33:35 GMT 4 ::1 OPTIONS /security/rest/p/login - RC: 200 0.842 ms
 Tue, 01 Dec 2020 16:33:35 GMT 87 ::1 POST /security/rest/p/login - RC: 200 13.117 ms
+Wed, 02 Dec 2020 07:47:04 GMT 4 ::1 OPTIONS /security/rest/p/login - RC: 200 5.913 ms
+Wed, 02 Dec 2020 07:47:19 GMT 105 ::1 POST /security/rest/p/login - RC: 200 14232.899 ms
+Wed, 02 Dec 2020 12:21:04 GMT 4 ::1 OPTIONS /security/rest/p/login - RC: 200 1.008 ms
+Wed, 02 Dec 2020 12:21:04 GMT 105 ::1 POST /security/rest/p/login - RC: 200 139.595 ms
+Wed, 02 Dec 2020 13:45:37 GMT 4 ::1 OPTIONS /security/rest/p/login - RC: 200 1.124 ms
+Wed, 02 Dec 2020 13:45:37 GMT 105 ::1 POST /security/rest/p/login - RC: 200 210.738 ms
+Wed, 02 Dec 2020 16:21:31 GMT 4 ::1 OPTIONS /security/rest/p/login - RC: 200 5.705 ms
+Wed, 02 Dec 2020 16:21:31 GMT 105 ::1 POST /security/rest/p/login - RC: 200 100.856 ms

@@ -2,7 +2,7 @@
 var home = false;
 const security = true;
 const jwt = true;
-const jwtGET = false;
+const jwtGET = true;
 const jwtPOST = true;
 
 var urlDB_ = "192.168.0.101:27017";

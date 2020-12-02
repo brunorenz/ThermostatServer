@@ -2,6 +2,7 @@ var express = require("express");
 var path = require("path");
 var fs = require("fs");
 var bodyParser = require("body-parser");
+var cookieParser = require("cookie-parser");
 var morgan = require("morgan");
 var errorhandler = require("errorhandler");
 var httpSecurityManager = require("../SecurityServer/routes/httpSecurityManager");
@@ -34,6 +35,7 @@ app.use(
   })
 );
 
+app.use(cookieParser());
 app.use(httpSecurityManager.checkBasicSecurity);
 
 var jsonParser = bodyParser.json();
@@ -52,7 +54,7 @@ console.log("Working directory is " + __dirname);
 
 // nuovi metodi
 app.post("/rest/p/*", jsonParser, httpProxy.thermHttpProxy);
-app.post("/rest/pu/*", urlencodedParser, httpProxy.thermHttpProxy);
+//app.post("/rest/pu/*", urlencodedParser, httpProxy.thermHttpProxy);
 app.get("/rest/g/*", httpProxy.thermHttpProxy);
 
 // Gestione Termostato
@@ -62,8 +64,8 @@ app.get("/rest/getConfiguration", termManagment.getConfiguration);
 
 app.get("/rest/check", termManagment.checkThermostatStatus);
 
-app.get("/rest/getSensorData", termManagment.getSensorData);
-app.get("/rest/getReleData", termManagment.getReleData);
+//app.get("/rest/getSensorData", termManagment.getSensorData);
+//app.get("/rest/getReleData", termManagment.getReleData);
 
 app.get("/rest/getReleStatistics", termManagment.getReleStatistics);
 app.get("/rest/getSensorStatistics", termManagment.getSensorStatistics);
@@ -75,7 +77,7 @@ app.get("/rest/getTemperature", termManagment.updateTemperatureReleStatus);
 
 app.post("/rest/shellyRegister", urlencodedParser, termManagment.shellyRegister);
 
-app.post("/rest/updateStatus", urlencodedParser, termManagment.updateStatus);
+//app.post("/rest/updateStatus", urlencodedParser, termManagment.updateStatus);
 
 app.post("/rest/updateConfiguration", urlencodedParser, termManagment.updateConfiguration);
 app.post("/rest/addProgramming", urlencodedParser, termManagment.addProgramming);

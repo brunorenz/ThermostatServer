@@ -122,11 +122,10 @@ exports.addProgramming = function (httpRequest, httpResponse) {
     httpResponse.json(httpUtils.createResponseKo(500, error));
   }
 };
-
+//updateStatus: 1,
+//getReledata. 2
+//getSensorData: 3,
 const service = {
-  updateStatus: 1,
-  getReleData: 2,
-  getSensorData: 3,
   checkThermostatStatus: 4,
   updateTemperatureReleStatus: 5,
   shellyRegister: 6,
@@ -145,15 +144,15 @@ let proxyPromise = function (fn, httpRequest, httpResponse) {
     options.usePromise = true;
     new Promise(function (resolve, reject) {
       switch (fn) {
-        case service.updateStatus:
-          thermManager.updateStatus(options, resolve, reject);
-          break;
-        case service.getReleData:
-          thermManager.getReleData(options, resolve, reject);
-          break;
-        case service.getSensorData:
-          thermManager.getSensorData(options, resolve, reject);
-          break;
+        // case service.updateStatus:
+        //   thermManager.updateStatus(options, resolve, reject);
+        //   break;
+        // case service.getReleData:
+        //   thermManager.getReleData(options, resolve, reject);
+        //   break;
+        // case service.getSensorData:
+        //   thermManager.getSensorData(options, resolve, reject);
+        //   break;
         case service.checkThermostatStatus:
           thermManager.checkThermostatStatus(options, resolve, reject);
           break;
@@ -199,17 +198,17 @@ exports.updateTemperatureReleStatus = function (httpRequest, httpResponse) {
   proxyPromise(service.updateTemperatureReleStatus, httpRequest, httpResponse);
 };
 
-exports.updateStatus = function (httpRequest, httpResponse) {
-  proxyPromise(service.updateStatus, httpRequest, httpResponse);
-};
+// exports.updateStatus = function (httpRequest, httpResponse) {
+//   proxyPromise(service.updateStatus, httpRequest, httpResponse);
+// };
 
-exports.getReleData = function (httpRequest, httpResponse) {
-  proxyPromise(service.getReleData, httpRequest, httpResponse);
-};
+// exports.getReleData = function (httpRequest, httpResponse) {
+//   proxyPromise(service.getReleData, httpRequest, httpResponse);
+// };
 
-exports.getSensorData = function (httpRequest, httpResponse) {
-  proxyPromise(service.getSensorData, httpRequest, httpResponse);
-};
+// exports.getSensorData = function (httpRequest, httpResponse) {
+//   proxyPromise(service.getSensorData, httpRequest, httpResponse);
+// };
 
 exports.shellyRegister = function (httpRequest, httpResponse) {
   proxyPromise(service.shellyRegister, httpRequest, httpResponse);

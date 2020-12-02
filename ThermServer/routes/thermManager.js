@@ -155,8 +155,7 @@ exports.updateConfigurationGUI = function (options, resolveIn, rejectIn) {
  */
 exports.updateStatus = function (options, resolveIn, rejectIn) {
   try {
-    let json = options.request;
-    let req = JSON.parse(json);
+    let req = options.request;
     options.updateField = {
       statusThermostat: parseInt(req.statusThermostat),
     };
@@ -175,12 +174,12 @@ exports.updateStatus = function (options, resolveIn, rejectIn) {
     });
 };
 
-/**
- * Update configuration
- */
-exports.updateConfigurationInternal = function (options) {
-  mongoDBMgr.updateConfiguration(options);
-};
+// /**
+//  * Update configuration
+//  */
+// exports.updateConfigurationInternal = function (options) {
+//   mongoDBMgr.updateConfiguration(options);
+// };
 
 /**
  * rigister a device
@@ -991,3 +990,31 @@ exports.getReleData = getReleData2;
 exports.getSensorData = getSensorData;
 exports.checkThermostatStatus = checkThermostatStatus;
 exports.updateTemperatureReleStatus = computeTemperatureReleStatus;
+
+let getConfiguration = function (options, resolveIn, rejectIn) {
+  options.action = config.TypeAction.READ;
+  options.createIfNull = false;
+  options.update = false;
+  mongoDBMgr.readAddConfiguration(options, resolveIn, rejectIn);
+};
+exports.getConfiguration = getConfiguration;
+
+exports.getConfigurationXX = function (httpRequest, httpResponse) {
+  var options = validateGetRequest(httpRequest, httpResponse);
+  if (options != null) {
+    try {
+      var type = config.TypeProgramming.TEMP;
+      if (httpRequest.query.type) {
+        if (httpRequest.query.type === "temp") type = config.TypeProgramming.TEMP;
+        else if (httpRequest.query.type === "light") type = config.TypeProgramming.LIGHT;
+      }
+      options.action = config.TypeAction.READ;
+      options.callback.push(genericHTTPPostService);
+      options.createIfNull = false;
+      options.update = false;
+      thermManager.readConfigurationInternal(options);
+    } catch (error) {
+      httpResponse.json(httpUtils.createResponseKo(500, error));
+    }
+  }
+};

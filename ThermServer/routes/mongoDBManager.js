@@ -17,9 +17,7 @@ exports.updateConfiguration = function (options, resolve, reject) {
     flagReleTemp: req.flagReleTemp,
     lastUpdate: new Date().getTime(),
   };
-  console.log(
-    "Aggiorno MAC : " + req.macAddress + " => " + JSON.stringify(updateField)
-  );
+  console.log("Aggiorno MAC : " + req.macAddress + " => " + JSON.stringify(updateField));
   if (req.flagTemperatureSensor === 1) {
     updateField.temperatureError = Number(req.temperatureError);
   }
@@ -55,8 +53,9 @@ exports.updateConfiguration = function (options, resolve, reject) {
  * @param {*} confColl
  * @param {*} options
  */
-var updateConfigurationFull = function (confColl, options) {
+var updateConfigurationFull = function (options, resolve, reject) {
   if (options.response) {
+    var confColl = globaljs.mongoCon.collection(globaljs.MONGO_CONF);
     let updateField = {};
     let req = options.request;
     if (options.register) {
@@ -77,7 +76,7 @@ var updateConfigurationFull = function (confColl, options) {
     updateField.flagHumiditySensor = req.flagHumiditySensor;
     updateField.primarySensor = req.primarySensor;
     updateField.shellyMqttId = req.shellyMqttId;
-    //updateField.temperatureError = req.temperatureError;
+    //FIXME gestire callback
     if (confColl) {
       confColl.updateOne(
         {
@@ -88,10 +87,53 @@ var updateConfigurationFull = function (confColl, options) {
         }
       );
     }
+    resolve(options);
   }
-  return thermManager.callback(options);
+  //return thermManager.callback(options);
 };
 
+let readAddConfiguration = function (options, resolve, reject) {
+  var confColl = globaljs.mongoCon.collection(globaljs.MONGO_CONF);
+  if (typeof options.macAddress !== "undefined") {
+    confColl.findOne({ _id: options.macAddress }, function (err, doc) {
+      if (err) {
+        console.error("ERRORE lettura configurazione " + err);
+        reject(err);
+      } else {
+        if (doc) {
+          options.response = doc;
+          if (options.update) updateConfigurationFull(options, resolve, reject);
+          else resolve(options);
+        } else if (options.createIfNull) {
+          // create new configuration
+          var conf = config.getConfigurationRecord(options.macAddress);
+          conf.firstAccess = Date.now();
+          confColl.insertOne(conf, function (err, doc) {
+            if (err) {
+              console.log("ERRORE inserimento configurazione " + err);
+              reject(err);
+            } else {
+              options.response = conf;
+              if (options.update) updateConfigurationFull(options, resolve, reject);
+              else resolve(options);
+            }
+          });
+        }
+      }
+    });
+  } else {
+    confColl.find({}).toArray(function (err, elements) {
+      if (err) {
+        console.error("ERRORE lettura configurazione " + err);
+        return thermManager.callback(options, err);
+      } else {
+        options.response = elements;
+        return thermManager.callback(options, err);
+      }
+    });
+  }
+};
+exports.readAddConfiguration = readAddConfiguration;
 /**
  * Read configuration
  * update if options.update = true
@@ -147,9 +189,7 @@ exports.readConfiguration = function (options) {
  */
 var updateProgrammingInternal = function (options, resolve, reject) {
   var progColl = globaljs.mongoCon.collection(globaljs.MONGO_PROG);
-  console.log(
-    "Aggiorna record programmazione di tipo " + options.programmingType
-  );
+  console.log("Aggiorna record programmazione di tipo " + options.programmingType);
   options.response.lastUpdate = new Date().getTime();
   progColl.updateOne(
     {
@@ -184,13 +224,9 @@ exports.addProgramming = function (options, resolve, reject) {
   //let type = options.programmingType;
   let index = 0;
   for (let ix = 0; ix < prog.programming.length; ix++)
-    if (prog.programming[ix].idProg > index)
-      index = prog.programming[ix].idProg;
+    if (prog.programming[ix].idProg > index) index = prog.programming[ix].idProg;
   if (options.programmingType === config.TypeProgramming.TEMP) {
-    var dayProg = config.getDefaultDayProgrammingTempRecord(
-      ++index,
-      "New Program " + index
-    );
+    var dayProg = config.getDefaultDayProgrammingTempRecord(++index, "New Program " + index);
     prog.programming.push(dayProg);
   } else {
     // aggiorna programamzione Luce
@@ -206,12 +242,8 @@ exports.deleteProgramming = function (options, resolve, reject) {
   let index = 0;
   let newProg = [];
   for (let ix = 0; ix < prog.programming.length; ix++)
-    if (prog.programming[ix].idProg != idProg)
-      newProg.push(prog.programming[ix]);
-    else
-      console.log(
-        "Travata ed eliminata programmazione giornaliera con id " + idProg
-      );
+    if (prog.programming[ix].idProg != idProg) newProg.push(prog.programming[ix]);
+    else console.log("Travata ed eliminata programmazione giornaliera con id " + idProg);
   prog.programming = newProg;
   updateProgrammingInternal(options, resolve, reject);
   //resolve(options);
@@ -236,11 +268,7 @@ var readProgramming = function (options, resolve, reject) {
           options.response = doc;
         } else if (options.createIfNull) {
           // create new configuration
-          console.log(
-            "Programming info not found for type : " +
-              options.programmingType +
-              " .. add default"
-          );
+          console.log("Programming info not found for type : " + options.programmingType + " .. add default");
           var prog = config.getProgrammingRecord(options.programmingType);
           prog._id = options.programmingType;
           progColl.insertOne(prog, function (err, doc) {
@@ -294,19 +322,19 @@ exports.genericQuery = function (options, resolve, reject) {
   else confColl.find(filter, { sort: sort }).toArray(qf);
 };
 
-/**
- * Update management attribute of configuration
- *
- */
-exports.updateStatus = function (options, resolve, reject) {
-  var confcoll = globaljs.mongoCon.collection(globaljs.MONGO_CONF);
-  let json = options.request;
-  var req = JSON.parse(json);
-  options.updateField = {
-    statusThermostat: parseInt(req.statusThermostat),
-  };
-  updateConfigurationInternal(options, resolve, reject);
-};
+// /**
+//  * Update management attribute of configuration
+//  *
+//  */
+// exports.updateStatus = function (options, resolve, reject) {
+//   var confcoll = globaljs.mongoCon.collection(globaljs.MONGO_CONF);
+//   let json = options.request;
+//   var req = JSON.parse(json);
+//   options.updateField = {
+//     statusThermostat: parseInt(req.statusThermostat),
+//   };
+//   updateConfigurationInternal(options, resolve, reject);
+// };
 
 /**
  * Generic update function for Configuration Collection
@@ -316,12 +344,7 @@ exports.updateStatus = function (options, resolve, reject) {
  */
 exports.updateConfigurationInternal = function (options, resolve, reject) {
   var confcoll = globaljs.mongoCon.collection(globaljs.MONGO_CONF);
-  console.log(
-    "Aggiorno MAC : " +
-      options.macAddress +
-      " => " +
-      JSON.stringify(options.updateField)
-  );
+  console.log("Aggiorno MAC : " + options.macAddress + " => " + JSON.stringify(options.updateField));
   confcoll.updateOne(
     {
       _id: options.macAddress,
@@ -333,26 +356,22 @@ exports.updateConfigurationInternal = function (options, resolve, reject) {
       if (!err) {
         // aggiorna dispositivi shelly
         new Promise(function (resolve, reject) {
-          thermManager.checkThermostatStatus(
-            { usePromise: true },
-            resolve,
-            reject
-          );
+          thermManager.checkThermostatStatus({ usePromise: true }, resolve, reject);
         })
           .then(function (options) {
-            console.log(
-              "Aggiornato stato timer : " + JSON.stringify(options.response)
-            );
+            console.log("Aggiornato stato timer : " + JSON.stringify(options.response));
           })
           .catch(function (error) {
             console.log("Errore in task checkThermostatStatus : " + error);
           });
-      }
-      options.response = { update: r.modifiedCount };
-      if (options.usePromise) {
-        if (err) reject(err);
-        else resolve(options);
-      } else thermManager.callback(options, err);
+        options.response = { update: r.modifiedCount };
+        resolve(options);
+      } else mongoDBMgr;
+      // options.response = { update: r.modifiedCount };
+      // if (options.usePromise) {
+      //   if (err) reject(err);
+      //   else resolve(options);
+      // } else thermManager.callback(options, err);
     }
   );
 };
@@ -439,17 +458,13 @@ let monitorData = function (options, resolve, reject) {
   // insert Monitor Record
   // update configuration record
   let sensor = options.deviceType === config.TypeDeviceType.ARDUINO;
-  var monitorColl = globaljs.mongoCon.collection(
-    sensor ? globaljs.MONGO_SENSORSTAT : globaljs.MONGO_SHELLYSTAT
-  );
+  var monitorColl = globaljs.mongoCon.collection(sensor ? globaljs.MONGO_SENSORSTAT : globaljs.MONGO_SHELLYSTAT);
   var confColl = globaljs.mongoCon.collection(globaljs.MONGO_CONF);
   let record = options.request;
   var now = new Date();
   record.time = now.getTime();
   record.date = now;
-  let query = sensor
-    ? { _id: record.macAddress }
-    : { shellyMqttId: record.shellyId };
+  let query = sensor ? { _id: record.macAddress } : { shellyMqttId: record.shellyId };
   confColl.findOne(query, function (err, doc) {
     if (err) {
       console.log("ERRORE lettura record configurazione " + err);
@@ -460,9 +475,7 @@ let monitorData = function (options, resolve, reject) {
           if (typeof doc.temperatureError != "undefined") {
             let t = record.temperature;
             record.temperature += doc.temperatureError;
-            console.log(
-              "Correggo temperatura da " + t + " a " + record.temperature
-            );
+            console.log("Correggo temperatura da " + t + " a " + record.temperature);
           }
         } else {
           record.macAddress = doc.macAddress;

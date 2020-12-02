@@ -45,7 +45,8 @@ let readUser2 = function (options, resolve, reject) {
       };
       if (typeof user.application != "undefined") {
         if (user.application === "MyBank") userOut.uniqueId = "CXY0";
-        else if (user.application === "Therm") userOut.uniqueId = "CXY1";
+        else if (user.application === "MyDomotic") userOut.uniqueId = "CXY1";
+        else if (user.application === "Therm") userOut.uniqueId = "CXY2";
       }
       token = httpSecurityManager.sign(userOut);
       options.response = userOut;

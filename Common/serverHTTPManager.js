@@ -69,6 +69,8 @@ let proxyPromise = function (fn, httpRequest, httpResponse) {
       : validateGetRequest(httpRequest, httpResponse);
   if (options != null) {
     processJWTToken(options);
+    // compatibilita
+    options.usePromise = true;
     new Promise(function (resolve, reject) {
       fn(options, resolve, reject);
     })
