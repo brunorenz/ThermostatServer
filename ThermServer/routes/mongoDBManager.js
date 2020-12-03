@@ -6,11 +6,9 @@ var thermManager = require("./thermManager");
  * Update management attribute of configuration
  *
  */
-exports.updateConfiguration = function (options, resolve, reject) {
+exports.updateDeviceConfiguration = function (options, resolve, reject) {
   var confcoll = globaljs.mongoCon.collection(globaljs.MONGO_CONF);
-  let json = options.request;
-  //console.log(json);
-  var req = JSON.parse(json);
+  var req = options.request.dati;
   let updateField = {
     location: req.location,
     flagReleLight: req.flagReleLight,
@@ -118,6 +116,9 @@ let readAddConfiguration = function (options, resolve, reject) {
               else resolve(options);
             }
           });
+        } else {
+          options.response = {};
+          resolve(options);
         }
       }
     });
@@ -125,10 +126,10 @@ let readAddConfiguration = function (options, resolve, reject) {
     confColl.find({}).toArray(function (err, elements) {
       if (err) {
         console.error("ERRORE lettura configurazione " + err);
-        return thermManager.callback(options, err);
+        reject(err);
       } else {
         options.response = elements;
-        return thermManager.callback(options, err);
+        resolve(options);
       }
     });
   }
@@ -193,7 +194,7 @@ var updateProgrammingInternal = function (options, resolve, reject) {
   options.response.lastUpdate = new Date().getTime();
   progColl.updateOne(
     {
-      _id: options.programmingType,
+      idProgType: options.programmingType,
     },
     {
       $set: options.response,
@@ -201,16 +202,12 @@ var updateProgrammingInternal = function (options, resolve, reject) {
     function (err, doc) {
       if (err) {
         console.error("Errore in aggiornamento record programmazione " + err);
+        reject(err);
       } else {
         options.response = doc;
         console.log("Aggiornamento effettuato con successo!");
+        resolve(options);
       }
-      if (options.usePromise) {
-        if (err) reject(err);
-        else resolve(options);
-      } else thermManager.callback(options, err);
-
-      //XXXthermManager.callback(options, err);
     }
   );
 };
@@ -226,10 +223,11 @@ exports.addProgramming = function (options, resolve, reject) {
   for (let ix = 0; ix < prog.programming.length; ix++)
     if (prog.programming[ix].idProg > index) index = prog.programming[ix].idProg;
   if (options.programmingType === config.TypeProgramming.TEMP) {
-    var dayProg = config.getDefaultDayProgrammingTempRecord(++index, "New Program " + index);
+    var dayProg = config.getDefaultDayProgrammingTempRecord(++index, "New Themperature Program " + index);
     prog.programming.push(dayProg);
   } else {
-    // aggiorna programamzione Luce
+    var dayProg = config.getDefaultDayProgrammingLightRecord(++index, "New Ligth Program " + index);
+    prog.programming.push(dayProg);
   }
   updateProgrammingInternal(options, resolve, reject);
 };
@@ -238,18 +236,30 @@ exports.deleteProgramming = function (options, resolve, reject) {
   let prog = options.response;
   let idProg = options.idProg;
   console.log("Elimina programmazione giornaliera con id " + idProg);
-  //let type = options.programmingType;
-  let index = 0;
   let newProg = [];
   for (let ix = 0; ix < prog.programming.length; ix++)
     if (prog.programming[ix].idProg != idProg) newProg.push(prog.programming[ix]);
     else console.log("Travata ed eliminata programmazione giornaliera con id " + idProg);
   prog.programming = newProg;
   updateProgrammingInternal(options, resolve, reject);
-  //resolve(options);
-  //thermManager.callback(options);
 };
 
+let addDefaultProgramming = function (options, resolve, reject) {
+  console.log("Programming info not found for type : " + options.programmingType + " .. add default");
+  var prog = config.getProgrammingRecord(options.programmingType);
+  //prog._id = options.programmingType;
+  var progColl = globaljs.mongoCon.collection(globaljs.MONGO_PROG);
+  progColl.insertOne(prog, function (err, doc) {
+    if (err) {
+      console.log("ERRORE inserimento programmazione " + err);
+      reject(err);
+    } else {
+      options.response = prog;
+      resolve(options);
+    }
+  });
+};
+exports.addDefaultProgramming = addDefaultProgramming;
 /**
  * manage read programming info request
  * create a new one if options.createIfNull = true
@@ -258,7 +268,7 @@ var readProgramming = function (options, resolve, reject) {
   var progColl = globaljs.mongoCon.collection(globaljs.MONGO_PROG);
   progColl.findOne(
     {
-      _id: options.programmingType,
+      idProgType: options.programmingType,
     },
     function (err, doc) {
       if (err) {

@@ -1,6 +1,5 @@
 const globaljs = require("./global");
 const config = require("./config");
-//const utils = require("../../Common/myutils");
 const mongoDBMgr = require("./mongoDBManager");
 const http = require("http");
 

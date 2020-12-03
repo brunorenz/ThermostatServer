@@ -1,6 +1,7 @@
 const globaljs = require("./global");
 const config = require("./config");
-const utils = require("../../Common/myutils");
+const utils = require("../../Common/commonUtils");
+const mongoUtils = require("../../Common/mongoUtils");
 const mongoDBMgr = require("./mongoDBManager");
 const mongoDBStatMgr = require("./mongoDBStatManager");
 const shellyMgr = require("./shellyManager");
@@ -30,17 +31,30 @@ exports.callback = callback;
  */
 exports.manageProgramming = function (options, resolveIn, rejectIn) {
   switch (options.action) {
+    case config.TypeAction.READ_ADD:
+      new Promise(function (resolve, reject) {
+        readProgramming(options, resolve, reject);
+      })
+        .then(function (options) {
+          let res = options.response;
+          if (res === null) mongoDBMgr.addDefaultProgramming(options, resolveIn, rejectIn);
+          else resolveIn(options);
+        })
+        .catch(function (error) {
+          rejectIn(error);
+        });
+      break;
     case config.TypeAction.READ:
-      mongoDBMgr.readProgramming(options);
+      readProgramming(options, resolveIn, rejectIn);
       break;
     case config.TypeAction.UPDATE:
-      options.response = options.programm;
+      options.response = options.program;
       mongoDBMgr.updateProgramming(options, resolveIn, rejectIn);
       break;
     case config.TypeAction.ADD:
     case config.TypeAction.DELETE:
       new Promise(function (resolve, reject) {
-        mongoDBMgr.readProgramming(options, resolve, reject);
+        readProgramming(options, resolve, reject);
       })
         .then(function (options) {
           if (options.action == config.TypeAction.ADD) mongoDBMgr.addProgramming(options, resolveIn, rejectIn);
@@ -141,13 +155,6 @@ exports.readConfigurationInternal = function (options) {
   options.createIfNull = false;
   options.update = false;
   mongoDBMgr.readConfiguration(options);
-};
-
-/**
- * Update configuration
- */
-exports.updateConfigurationGUI = function (options, resolveIn, rejectIn) {
-  mongoDBMgr.updateConfiguration(options, resolveIn, rejectIn);
 };
 
 /**
@@ -513,15 +520,24 @@ let readSensor = function (options) {
  * Reads programming data of a specific type
  * @param {*} options
  */
-let readProgramming = function (options) {
+let readProgrammingPromise = function (options) {
   return new Promise(function (resolve, reject) {
     let query = {
       collection: globaljs.mongoCon.collection(globaljs.MONGO_PROG),
-      filter: { _id: options.programmingType },
+      filter: { idProgType: utils.returnNumber(options.programmingType) },
       selectOne: true,
     };
     options.genericQuery = query;
-    mongoDBMgr.genericQuery(options, resolve, reject);
+    mongoUtils.genericQuery(options, resolve, reject);
+  });
+};
+
+let readProgramming = function (options, resolve, reject) {
+  let r = readProgrammingPromise(options);
+  r.then(function (options) {
+    resolve(options);
+  }).catch(function (error) {
+    reject(error);
   });
 };
 
@@ -547,7 +563,7 @@ let computeTemperatureReleStatus = function (options, resolveIn, rejectIn) {
       options.tempSensor = options.response;
       // read actual programming
       options.programmingType = config.TypeProgramming.TEMP;
-      let r3 = readProgramming(options);
+      let r3 = readProgrammingPromise(options);
       r3.then(function (options) {
         evaluateTemperature(options, resolveIn, rejectIn);
         //resolveIn(options);
@@ -580,7 +596,7 @@ let computeLightReleStatus = function (options, resolveIn, rejectIn) {
     options.lightSensor = options.response;
     // read actual programming
     options.programmingType = config.TypeProgramming.LIGHT;
-    let r3 = readProgramming(options);
+    let r3 = readProgrammingPromise(options);
     r3.then(function (options) {
       evaluateLight(options, resolveIn, rejectIn);
     }).catch(function (error) {
@@ -616,10 +632,10 @@ let checkThermostatStatus = function (options, resolveIn, rejectIn) {
       shellyMgr.shellySendCommand(options);
       options.response.deviceid = options.releConf.shellyMqttId;
       options.response.status = status;
-      if (resolveIn != "undefined") resolveIn(options);
+      if (resolveIn != undefined) resolveIn(options);
     })
     .catch(function (error) {
-      if (rejectIn != "undefined") rejectIn(error);
+      if (rejectIn != undefined) rejectIn(error);
       else console.error("**ERROR : " + error);
     });
 };
@@ -676,7 +692,7 @@ let updateMotionReleStatus2 = function (options, resolveIn, rejectIn) {
     options.releConf = conf;
     if (conf.length > 0) {
       options.programmingType = config.TypeProgramming.LIGHT;
-      let r3 = readProgramming(options);
+      let r3 = readProgrammingPromise(options);
       r3.then(function (options) {
         // per ogni rele trovato gestisci stato
         options.programming = options.response;
@@ -990,14 +1006,30 @@ exports.getReleData = getReleData2;
 exports.getSensorData = getSensorData;
 exports.checkThermostatStatus = checkThermostatStatus;
 exports.updateTemperatureReleStatus = computeTemperatureReleStatus;
-
-let getConfiguration = function (options, resolveIn, rejectIn) {
+/**
+ * Get Configuration
+ * @param {*} options
+ * @param {*} resolveIn
+ * @param {*} rejectIn
+ */
+let getDeviceConfiguration = function (options, resolveIn, rejectIn) {
   options.action = config.TypeAction.READ;
   options.createIfNull = false;
   options.update = false;
   mongoDBMgr.readAddConfiguration(options, resolveIn, rejectIn);
 };
-exports.getConfiguration = getConfiguration;
+exports.getDeviceConfiguration = getDeviceConfiguration;
+
+/**
+ * Update Configuration
+ * @param {*} options
+ * @param {*} resolveIn
+ * @param {*} rejectIn
+ */
+let updateDeviceConfiguration = function (options, resolveIn, rejectIn) {
+  mongoDBMgr.updateDeviceConfiguration(options, resolveIn, rejectIn);
+};
+exports.updateDeviceConfiguration = updateDeviceConfiguration;
 
 exports.getConfigurationXX = function (httpRequest, httpResponse) {
   var options = validateGetRequest(httpRequest, httpResponse);

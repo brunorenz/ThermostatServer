@@ -1,4 +1,4 @@
-var myutils = require("./Common/myutils");
+var commonUtils = require("./Common/commonUtils");
 var config = require("./ThermServer/routes/config");
 var globaljs = require("./ThermServer/routes/global");
 var securityManager = require("./SecurityServer/routes/securityManager");
@@ -7,7 +7,7 @@ console.log = (function () {
   var orig = console.log;
   return function () {
     try {
-      myutils.log.apply(console, arguments);
+      commonUtils.log.apply(console, arguments);
     } catch {
       orig.apply(console, arguments);
     }
@@ -23,6 +23,7 @@ var ep_app = require("./ThermServer/thermServer");
 app.use("/therm", ep_app);
 
 var ep_app2 = require("./SecurityServer/securityServer");
+const { resolve } = require("path");
 app.use("/security", ep_app2);
 
 var port = process.env.PORT || globaljs.SERVER_PORT;
@@ -107,7 +108,7 @@ function setupHTTP() {
  */
 function setupTimer() {
   var timers = require("./ThermServer/routes/timersManager");
-  setTimeout(timers.checkTemperature, 5000);
+  //setTimeout(timers.checkTemperature, 5000);
 }
 
 /**
@@ -116,23 +117,39 @@ function setupTimer() {
 function setupInitialTask() {
   const thermManager = require("./ThermServer/routes/thermManager");
   let options = {
-    action: config.TypeAction.READ,
-    createIfNull: true,
-    callback: [],
+    action: config.TypeAction.READ_ADD,
   };
   try {
     // check for TEMP Programing record
-    console.log("Check Temperature Programming record ..");
-    options.programmingType = config.TypeProgramming.TEMP;
-    thermManager.manageProgramming(options);
+    new Promise(function (resolve, reject) {
+      console.log("Check Temperature Programming record ..");
+      options.programmingType = config.TypeProgramming.TEMP;
+      thermManager.manageProgramming(options, resolve, reject);
+    }).then(
+      (result) => {
+        console.log(".. Temperature Programming record : OK");
+      },
+      (error) => {
+        console.log(".. Temperature Programming record : KO : " + error);
+      }
+    );
   } catch (error) {
     console.log(error);
   }
   try {
     // check for LIGHT Programing record
-    console.log("Check Light Programming record ..");
-    options.programmingType = config.TypeProgramming.LIGHT;
-    thermManager.manageProgramming(options);
+    new Promise(function (resolve, reject) {
+      console.log("Check Light Programming record ..");
+      options.programmingType = config.TypeProgramming.LIGHT;
+      thermManager.manageProgramming(options, resolve, reject);
+    }).then(
+      (result) => {
+        console.log(".. Light Programming record : OK");
+      },
+      (error) => {
+        console.log(".. Light Programming record : KO : " + error);
+      }
+    );
   } catch (error) {
     console.log(error);
   }

@@ -5,7 +5,7 @@ const measure = { LOCAL: 1, MEDIUM: 2, PRIORITY: 3 };
 const programming = { TEMP: 1, LIGHT: 2 };
 const deviceType = { ANY: 0, ARDUINO: 1, SHELLY: 2 };
 const shellyCommand = { RELAY: 0, COMMAND: 1 };
-const action = { READ: 1, RESET: 2, UPDATE: 3, DELETE: 4, ADD: 5 };
+const action = { READ: 1, RESET: 2, UPDATE: 3, DELETE: 4, ADD: 5, READ_ADD: 6 };
 
 exports.TypeStatus = status;
 exports.TypeMeasure = measure;
@@ -129,10 +129,7 @@ function getDefaultProgrammingTempRecord(idType) {
   conf.idProgType = idType;
   conf.activeProg = 0;
   conf.lastUpdate = Date.now();
-  var prog = getDefaultDayProgrammingTempRecord(
-    0,
-    "Default Temperature Program"
-  );
+  var prog = getDefaultDayProgrammingTempRecord(0, "Default Temperature Program");
   conf.programming[0] = prog;
   return conf;
 }
@@ -154,11 +151,6 @@ exports.getProgrammingRecord = function (idType) {
   if (idType === programming.TEMP) {
     conf = getDefaultProgrammingTempRecord(idType);
   } else if (idType === programming.LIGHT) {
-    // var confRecord = {
-    //   idProgType: programming.LIGHT,
-    //   lastUpdate: Date.now(),
-    //   programming: []
-    // };
     conf = getDefaultProgrammingLightRecord(idType);
   }
   return conf;

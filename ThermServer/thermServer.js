@@ -54,37 +54,13 @@ console.log("Working directory is " + __dirname);
 
 // nuovi metodi
 app.post("/rest/p/*", jsonParser, httpProxy.thermHttpProxy);
-//app.post("/rest/pu/*", urlencodedParser, httpProxy.thermHttpProxy);
 app.get("/rest/g/*", httpProxy.thermHttpProxy);
 
 // Gestione Termostato
-// GET METHOD
-app.get("/rest/getProgramming", termManagment.getProgramming);
-app.get("/rest/getConfiguration", termManagment.getConfiguration);
 
 app.get("/rest/check", termManagment.checkThermostatStatus);
-
-//app.get("/rest/getSensorData", termManagment.getSensorData);
-//app.get("/rest/getReleData", termManagment.getReleData);
-
-app.get("/rest/getReleStatistics", termManagment.getReleStatistics);
-app.get("/rest/getSensorStatistics", termManagment.getSensorStatistics);
-
 app.get("/rest/getTemperature", termManagment.updateTemperatureReleStatus);
-
-// POST METHOD
-//app.post("/rest/login", urlencodedParser, termManagment.login);
-
 app.post("/rest/shellyRegister", urlencodedParser, termManagment.shellyRegister);
-
-//app.post("/rest/updateStatus", urlencodedParser, termManagment.updateStatus);
-
-app.post("/rest/updateConfiguration", urlencodedParser, termManagment.updateConfiguration);
-app.post("/rest/addProgramming", urlencodedParser, termManagment.addProgramming);
-app.post("/rest/deleteProgramming", urlencodedParser, termManagment.deleteProgramming);
-
-app.post("/rest/updateProgramming", urlencodedParser, termManagment.updateProgramming);
-
 app.post("/rest/monitor", jsonParser, termManagment.monitorSensorData);
 
 module.exports = app;

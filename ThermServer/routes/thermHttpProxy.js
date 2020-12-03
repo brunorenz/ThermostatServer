@@ -1,5 +1,6 @@
 var httpManager = require("../../Common/serverHTTPManager");
 var thermManager = require("./thermManager");
+var thermHttpWrapper = require("./thermHttpWrapper");
 
 /**
  * List of implemented http function
@@ -8,7 +9,14 @@ const serviceMap = {
   getSensorData: thermManager.getSensorData,
   getReleData: thermManager.getReleData,
   updateStatus: thermManager.updateStatus,
-  getConfiguration: thermManager.updateStatus,
+  getDeviceConfiguration: thermManager.getDeviceConfiguration,
+  updateDeviceConfiguration: thermManager.updateDeviceConfiguration,
+  getProgramming: thermHttpWrapper.getProgramming,
+  addProgramming: thermHttpWrapper.addProgramming,
+  updateProgramming: thermHttpWrapper.updateProgramming,
+  deleteProgramming: thermHttpWrapper.deleteProgramming,
+  getReleStatistics: thermHttpWrapper.getReleStatistics,
+  getSensorStatistics: thermHttpWrapper.getSensorStatistics,
 };
 
 /**
