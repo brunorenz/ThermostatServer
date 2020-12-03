@@ -6,3 +6,5 @@ build
 npm-debug.log
 
 .DS_Store
+logs/SecurityServer.log
+logs/ThermServer.log
