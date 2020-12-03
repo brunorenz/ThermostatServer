@@ -1,6 +1,6 @@
 const thermManager = require("./thermManager");
 const shellyMgr = require("./shellyManager");
-const mongoDBMgr = require("./mongoDBManager");
+const mongoUtils = require("../../Common/mongoUtils");
 const globaljs = require("./global");
 const config = require("./config");
 
@@ -8,16 +8,14 @@ let releTimer = [];
 
 var checkTemperature = function () {
   var options = {
-    usePromise: true
+    usePromise: true,
   };
   console.log("Start Timer for CheckTemperature ..");
   new Promise(function (resolve, reject) {
     thermManager.checkThermostatStatus(options, resolve, reject);
   })
     .then(function (options) {
-      console.log(
-        "Aggiornato stato timer : " + JSON.stringify(options.response)
-      );
+      console.log("Aggiornato stato timer : " + JSON.stringify(options.response));
     })
     .catch(function (error) {
       console.log("Errore in task checkThermostatStatus : " + error);
@@ -26,8 +24,8 @@ var checkTemperature = function () {
 };
 
 /**
- * 
- * @param {*} options 
+ *
+ * @param {*} options
  */
 var manageLightRele = function (options) {
   let shellyCommand = {
@@ -37,7 +35,7 @@ var manageLightRele = function (options) {
     macAddress: options.macAddress,
     sensorMacAddress: options.sensorMacAddress,
     timeoutRunning: new Date(),
-    timeout: 10000
+    timeout: 10000,
   };
 
   // verifica se Timer già impostato
@@ -51,7 +49,7 @@ var manageLightRele = function (options) {
   }
   if (entry != null) {
     // Timer trovato .. lo resetto
-    clearTimeout(entry.timeoutObj)
+    clearTimeout(entry.timeoutObj);
   }
   if (typeof options.timeoutRunning === "undefined") {
     // prima volta
@@ -63,47 +61,45 @@ var manageLightRele = function (options) {
       selectOne: true,
       sort: { time: -1 },
       filter: {
-        macAddress: options.sensorMacAddress
-      }
+        macAddress: options.sensorMacAddress,
+      },
     };
     options.genericQuery = query;
     options.usePromise = true;
     new Promise(function (resolve, reject) {
-      mongoDBMgr.genericQuery(options, resolve, reject);
+      mongoUtils.genericQuery(options, resolve, reject);
     })
       .then(function (options) {
         shellyCommand = options;
         if (options.response && options.response.motion === 0) {
           shellyCommand.status = 0;
           shellyCommand.timeout = 0; // reset timeout
-        } else
-          shellyCommand.timeout = 2000;
+        } else shellyCommand.timeout = 2000;
         callShelly(shellyCommand);
         //resolve(options);
       })
       .catch(function (error) {
         reject(error);
-        console.error("**ERROR : "+error)
+        console.error("**ERROR : " + error);
       });
   }
 };
 
 /**
- * 
- * @param {*} shellyCommand 
+ *
+ * @param {*} shellyCommand
  */
 let callShelly = function (shellyCommand) {
   console.log("Start Timer for manageLightRele ..");
   shellyMgr.shellySendCommand({ shellyCommand: shellyCommand });
   shellyCommand.timeoutRunning = true;
   if (shellyCommand.timeout > 0) {
-    entry =
-    {
+    entry = {
       timeoutObj: setTimeout(manageLightRele, shellyCommand.timeout, shellyCommand),
-      shellyId: shellyCommand.deviceid
-    }
+      shellyId: shellyCommand.deviceid,
+    };
     releTimer.push(entry);
   }
-}
+};
 exports.checkTemperature = checkTemperature;
 exports.manageLightRele = manageLightRele;

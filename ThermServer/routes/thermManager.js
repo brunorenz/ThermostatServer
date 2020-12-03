@@ -289,76 +289,6 @@ let shellyRegisterInternal = function (options) {
 };
 
 exports.shellyRegister = shellyRegister;
-/*
-let getReleData = function (options, resolveIn, rejectIn) {
-  new Promise(function (resolve, reject) {
-    let query = {
-      collection: globaljs.mongoCon.collection(globaljs.MONGO_CONF),
-      filter: {
-        $or: [{ flagReleTemp: 1 }, { flagReleLight: 1 }]
-      },
-      selectOne: false
-    };
-    options.genericQuery = query;
-    mongoDBMgr.genericQuery(options, resolve, reject);
-  })
-    .then(function (options) {
-      if (options.response && options.response.length > 0) {
-        query = {
-          collection: globaljs.mongoCon.collection(globaljs.MONGO_SHELLYSTAT),
-          selectOne: true,
-          sort: { time: -1 }
-        };
-        let pIn = [];
-        // recupero stato rele
-        for (let ix = 0; ix < options.response.length; ix++)
-          pIn.push(
-            new Promise(function (resolve, reject) {
-              let conf = options.response[ix];
-              let nOptions = {
-                genericQuery: query,
-                usePromise: true,
-                shellyId: conf.shellyMqttId,
-                macAddress: conf.macAddress,
-                location: conf.location,
-                flagReleTemp: conf.flagReleTemp,
-                flagReleLight: conf.flagReleLight,
-                statusThermostat: conf.statusThermostat
-              };
-              nOptions.genericQuery.filter = {
-                shellyId: nOptions.shellyId
-              };
-              mongoDBMgr.genericQuery(nOptions, resolve, reject);
-            })
-          );
-        if (pIn.length > 0) {
-          Promise.all(pIn)
-            .then(function (optionsN) {
-              options.response = [];
-              for (let ix = 0; ix < optionsN.length; ix++) {
-                let entry = optionsN[ix];
-                let record = entry.response;
-                record.location = entry.location;
-                record.flagReleTemp = entry.flagReleTemp;
-                record.flagReleLight = entry.flagReleLight;
-                record.macAddress = entry.macAddress;
-                if (record.flagReleTemp === 1)
-                  record.statusThermostat = entry.statusThermostat;
-                options.response.push(record);
-              }
-              resolveIn(options);
-            })
-            .catch(function (error) {
-              rejectIn(error);
-            });
-        }
-      } else resolveIn(options);
-    })
-    .catch(function (error) {
-      rejectIn(error);
-    });
-};
-*/
 
 /**
  * Reads Sensors configuration
@@ -377,7 +307,7 @@ let getSensorData = function (options, resolveIn, rejectIn) {
       selectOne: false,
     };
     options.genericQuery = query;
-    mongoDBMgr.genericQuery(options, resolve, reject);
+    mongoUtils.genericQuery(options, resolve, reject);
   })
     .then(function (options) {
       if (options.response) {
@@ -400,7 +330,7 @@ let getSensorData = function (options, resolveIn, rejectIn) {
               nOptions.genericQuery.filter = {
                 macAddress: nOptions.macAddress,
               };
-              mongoDBMgr.genericQuery(nOptions, resolve, reject);
+              mongoUtils.genericQuery(nOptions, resolve, reject);
             })
           );
         if (pIn.length > 0) {
@@ -442,7 +372,7 @@ exports.getStatistics = function (options, resolveIn, rejectIn) {
       selectOne: false,
     };
     options.genericQuery = query;
-    mongoDBMgr.genericQuery(options, resolve, reject);
+    mongoUtils.genericQuery(options, resolve, reject);
   })
     .then(function (options) {
       new Promise(function (resolve, reject) {
@@ -480,7 +410,7 @@ let readReleMotionLight = function (options) {
       selectOne: false,
     };
     options.genericQuery = query;
-    mongoDBMgr.genericQuery(options, resolve, reject);
+    mongoUtils.genericQuery(options, resolve, reject);
   });
 };
 
@@ -496,7 +426,7 @@ let readReleTemperature = function (options) {
       selectOne: true,
     };
     options.genericQuery = query;
-    mongoDBMgr.genericQuery(options, resolve, reject);
+    mongoUtils.genericQuery(options, resolve, reject);
   });
 };
 
@@ -512,7 +442,7 @@ let readSensor = function (options) {
       selectOne: false,
     };
     options.genericQuery = query;
-    mongoDBMgr.genericQuery(options, resolve, reject);
+    mongoUtils.genericQuery(options, resolve, reject);
   });
 };
 
@@ -822,24 +752,6 @@ let evaluateTemperature = function (options, resolveIn, rejectIn) {
   let minTempManual = currentProg.minTempManual;
   let minTempAuto = currentProg.minTemp;
   let autoRecord = recuperaFasciaOraria(currentProg);
-  // console.log("Calcolo fascia ora..");
-  // let now = new Date();
-  // let minsec = now.getHours() * 60 + now.getMinutes();
-  // let day = now.getDay();
-  // minTempAuto = currentProg.minTemp;
-  // // day su db 0 Lun - 7 Dom
-  // let dayDb = day - 1;
-  // if (dayDb < 0) dayDb = 6;
-  // console.log("Giorno : " + day + " (dayDB) " + dayDb + " - Ora " + minsec);
-  // for (let ix = 0; ix < 7; ix++)
-  //   if (currentProg.dayProgramming[ix].idDay === dayDb)
-  //     for (let iy = 0; iy < currentProg.dayProgramming[ix].prog.length; iy++) {
-  //       let entry = currentProg.dayProgramming[ix].prog[iy];
-  //       if (minsec >= entry.timeStart && minsec <= entry.timeEnd) {
-  //         autoRecord = entry;
-  //         break;
-  //       }
-  //     }
   let prioritySensor = null;
   if (autoRecord != null) {
     console.log("Trovata fascia oraria da " + autoRecord.timeStart + " a " + autoRecord.timeEnd);
@@ -864,7 +776,6 @@ let evaluateTemperature = function (options, resolveIn, rejectIn) {
   options.response = {
     temperature: temperature,
     temperatureMeasure: conf.temperatureMeasure,
-    //primarySensor: primarySensor,
     minTempManual: minTempManual,
     minTempAuto: minTempAuto,
   };
@@ -924,7 +835,7 @@ let readMonitor = function (options) {
   };
   return new Promise(function (resolveIn, rejectIn) {
     new Promise(function (resolve, reject) {
-      mongoDBMgr.genericQuery(options, resolve, reject);
+      mongoUtils.genericQuery(options, resolve, reject);
     })
       .then(function (options) {
         options.shellyData = options.response;
@@ -956,7 +867,7 @@ let getReleData2 = function (options, resolveIn, rejectIn) {
       selectOne: false,
     };
     options.genericQuery = query;
-    mongoDBMgr.genericQuery(options, resolve, reject);
+    mongoUtils.genericQuery(options, resolve, reject);
   })
     .then(function (options) {
       if (options.response && options.response.length > 0) {

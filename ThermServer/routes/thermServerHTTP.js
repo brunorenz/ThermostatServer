@@ -1,4 +1,3 @@
-var config = require("./config");
 var httpUtils = require("../../Common/httpUtils");
 var thermManager = require("./thermManager");
 
@@ -49,79 +48,79 @@ var validatePostRequest = function (httpRequest, httpResponse) {
   return options;
 };
 
-/**
- * Update Programming Record
- */
-exports.updateProgramming = function (httpRequest, httpResponse) {
-  var options = validatePostRequest(httpRequest, httpResponse);
-  try {
-    let input = JSON.parse(options.request);
-    options.programmingType = input.type;
-    options.programm = input.programm;
-    options.action = config.TypeAction.UPDATE;
-    options.usePromise = true;
-    new Promise(function (resolve, reject) {
-      thermManager.manageProgramming(options, resolve, reject);
-    })
-      .then(function (options) {
-        genericHTTPPostService(options);
-      })
-      .catch(function (error) {
-        httpResponse.json(httpUtils.createResponseKo(500, error));
-      });
-  } catch (error) {
-    httpResponse.json(httpUtils.createResponseKo(500, error));
-  }
-};
+// /**
+//  * Update Programming Record
+//  */
+// exports.updateProgramming = function (httpRequest, httpResponse) {
+//   var options = validatePostRequest(httpRequest, httpResponse);
+//   try {
+//     let input = JSON.parse(options.request);
+//     options.programmingType = input.type;
+//     options.programm = input.programm;
+//     options.action = config.TypeAction.UPDATE;
+//     options.usePromise = true;
+//     new Promise(function (resolve, reject) {
+//       thermManager.manageProgramming(options, resolve, reject);
+//     })
+//       .then(function (options) {
+//         genericHTTPPostService(options);
+//       })
+//       .catch(function (error) {
+//         httpResponse.json(httpUtils.createResponseKo(500, error));
+//       });
+//   } catch (error) {
+//     httpResponse.json(httpUtils.createResponseKo(500, error));
+//   }
+// };
 
-/**
- * Delete Programming Record
- */
-exports.deleteProgramming = function (httpRequest, httpResponse) {
-  var options = validatePostRequest(httpRequest, httpResponse);
-  try {
-    let input = JSON.parse(options.request);
-    options.programmingType = input.type;
-    options.idProg = input.id;
-    options.action = config.TypeAction.DELETE;
-    options.usePromise = true;
-    new Promise(function (resolve, reject) {
-      thermManager.manageProgramming(options, resolve, reject);
-    })
-      .then(function (options) {
-        genericHTTPPostService(options);
-      })
-      .catch(function (error) {
-        httpResponse.json(httpUtils.createResponseKo(500, error));
-      });
-  } catch (error) {
-    httpResponse.json(httpUtils.createResponseKo(500, error));
-  }
-};
+// /**
+//  * Delete Programming Record
+//  */
+// exports.deleteProgramming = function (httpRequest, httpResponse) {
+//   var options = validatePostRequest(httpRequest, httpResponse);
+//   try {
+//     let input = JSON.parse(options.request);
+//     options.programmingType = input.type;
+//     options.idProg = input.id;
+//     options.action = config.TypeAction.DELETE;
+//     options.usePromise = true;
+//     new Promise(function (resolve, reject) {
+//       thermManager.manageProgramming(options, resolve, reject);
+//     })
+//       .then(function (options) {
+//         genericHTTPPostService(options);
+//       })
+//       .catch(function (error) {
+//         httpResponse.json(httpUtils.createResponseKo(500, error));
+//       });
+//   } catch (error) {
+//     httpResponse.json(httpUtils.createResponseKo(500, error));
+//   }
+// };
 
-/**
- * Add Programming Record
- */
-exports.addProgramming = function (httpRequest, httpResponse) {
-  var options = validatePostRequest(httpRequest, httpResponse);
-  try {
-    let input = JSON.parse(options.request);
-    options.programmingType = input.type;
-    options.action = config.TypeAction.ADD;
-    options.usePromise = true;
-    new Promise(function (resolve, reject) {
-      thermManager.manageProgramming(options, resolve, reject);
-    })
-      .then(function (options) {
-        genericHTTPPostService(options);
-      })
-      .catch(function (error) {
-        httpResponse.json(httpUtils.createResponseKo(500, error));
-      });
-  } catch (error) {
-    httpResponse.json(httpUtils.createResponseKo(500, error));
-  }
-};
+// /**
+//  * Add Programming Record
+//  */
+// exports.addProgramming = function (httpRequest, httpResponse) {
+//   var options = validatePostRequest(httpRequest, httpResponse);
+//   try {
+//     let input = JSON.parse(options.request);
+//     options.programmingType = input.type;
+//     options.action = config.TypeAction.ADD;
+//     options.usePromise = true;
+//     new Promise(function (resolve, reject) {
+//       thermManager.manageProgramming(options, resolve, reject);
+//     })
+//       .then(function (options) {
+//         genericHTTPPostService(options);
+//       })
+//       .catch(function (error) {
+//         httpResponse.json(httpUtils.createResponseKo(500, error));
+//       });
+//   } catch (error) {
+//     httpResponse.json(httpUtils.createResponseKo(500, error));
+//   }
+// };
 //updateStatus: 1,
 //getReledata. 2
 //getSensorData: 3,
@@ -179,12 +178,12 @@ let proxyPromise = function (fn, httpRequest, httpResponse) {
   }
 };
 
-/**
- * Update Configuration
- */
-exports.updateConfiguration = function (httpRequest, httpResponse) {
-  proxyPromise(service.updateConfigurationGUI, httpRequest, httpResponse);
-};
+// /**
+//  * Update Configuration
+//  */
+// exports.updateConfiguration = function (httpRequest, httpResponse) {
+//   proxyPromise(service.updateConfigurationGUI, httpRequest, httpResponse);
+// };
 
 exports.monitorSensorData = function (httpRequest, httpResponse) {
   proxyPromise(service.monitorSensorData, httpRequest, httpResponse);
@@ -263,32 +262,32 @@ exports.shellyRegister = function (httpRequest, httpResponse) {
 //   }
 // };
 
-/**
- * Get programming info type = temp/light prog = all / reset
- * @param {*} httpRequest
- * @param {*} httpResponse
- */
-exports.getProgramming = function (httpRequest, httpResponse) {
-  var options = validateGetRequest(httpRequest, httpResponse);
-  if (options != null) {
-    var type = config.TypeProgramming.TEMP;
-    if (typeof httpRequest.query.type != "undefined") {
-      let t = httpRequest.query.type;
-      if (t === "temp") type = config.TypeProgramming.TEMP;
-      else if (t === "light") type = config.TypeProgramming.LIGHT;
-    }
-    options.programmingType = type;
-    options.action = config.TypeAction.READ;
-    options.createIfNull = true;
-    options.callback.push(genericHTTPPostService);
-    try {
-      thermManager.manageProgramming(options);
-    } catch (error) {
-      options.error = error;
-      genericHTTPPostService(options, error);
-    }
-  }
-};
+// /**
+//  * Get programming info type = temp/light prog = all / reset
+//  * @param {*} httpRequest
+//  * @param {*} httpResponse
+//  */
+// exports.getProgramming = function (httpRequest, httpResponse) {
+//   var options = validateGetRequest(httpRequest, httpResponse);
+//   if (options != null) {
+//     var type = config.TypeProgramming.TEMP;
+//     if (typeof httpRequest.query.type != "undefined") {
+//       let t = httpRequest.query.type;
+//       if (t === "temp") type = config.TypeProgramming.TEMP;
+//       else if (t === "light") type = config.TypeProgramming.LIGHT;
+//     }
+//     options.programmingType = type;
+//     options.action = config.TypeAction.READ;
+//     options.createIfNull = true;
+//     options.callback.push(genericHTTPPostService);
+//     try {
+//       thermManager.manageProgramming(options);
+//     } catch (error) {
+//       options.error = error;
+//       genericHTTPPostService(options, error);
+//     }
+//   }
+// };
 
 // /**
 //  * Login function
