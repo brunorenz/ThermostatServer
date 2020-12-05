@@ -1,4 +1,5 @@
 var httpUtils = require("./httpUtils");
+var httpSecurityManager = require("../SecurityServer/routes/httpSecurityManager");
 
 /**
  * Send JSON response
@@ -7,10 +8,14 @@ var genericHTTPPostService = function (options) {
   if (options.httpResponse) {
     let res = options.httpResponse;
     let req = options.httpRequest;
-    if (req.jwttoken != undefined) {
-      let t = "jwttoken=" + req.jwttoken + "; Path=/; HttpOnly";
+    if (req.jwtData != undefined) {
+      let t = "jwttoken=" + httpSecurityManager.encrypt(req.jwtData) + "; Path=/; HttpOnly";
       res.append("Set-Cookie", t);
     }
+    // if (req.jwttoken != undefined) {
+    //   let t = "jwttoken=" + req.jwttoken + "; Path=/; HttpOnly";
+    //   res.append("Set-Cookie", t);
+    // }
     if (options.error) {
       let errorCode = 500;
       if (options.errorCode != "undefined") errorCode = options.errorCode;

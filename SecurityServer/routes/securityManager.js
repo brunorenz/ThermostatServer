@@ -5,33 +5,6 @@ var configuration = require("./configuration");
 var mongoSec = null;
 
 let readUser = function (options, resolve, reject) {
-  let user = JSON.parse(options.request);
-  console.log("USER " + typeof user);
-  console.log("EMAIL " + typeof user.email);
-  // 0C88028BF3AA6A6A143ED846F2BE1EA4
-  if (typeof user != "undefined" && typeof user.email != "undefined") {
-    if (user.email === "65bruno@gmail.com" && user.password === "pippo") {
-      let userOut = {
-        email: user.email,
-        name: "Bruno",
-      };
-      if (typeof user.application != "undefined") {
-        if (user.application === "MyBank") userOut.uniqueId = "CXY0";
-        else if (user.application === "Therm") userOut.uniqueId = "CXY1";
-      }
-      let token = httpSecurityManager.sign(userOut);
-      options.httpRequest.jwttoken = token;
-      //userOut.token = token;
-      options.response = userOut;
-    } else {
-      options.errorCode = 200;
-      options.error = "Utente o Password errati!";
-    }
-  }
-  resolve(options);
-};
-
-let readUser2 = function (options, resolve, reject) {
   let user = options.request;
   let token = "KO";
   console.log("USER " + typeof user);
@@ -48,7 +21,7 @@ let readUser2 = function (options, resolve, reject) {
         else if (user.application === "MyDomotic") userOut.uniqueId = "CXY1";
         else if (user.application === "Therm") userOut.uniqueId = "CXY2";
       }
-      token = httpSecurityManager.sign(userOut);
+      httpSecurityManager.setJwt(options.httpRequest,"user", userOut);
       options.response = userOut;
     } else {
       options.errorCode = 200;
@@ -62,7 +35,7 @@ let readUser2 = function (options, resolve, reject) {
  * List of implemented http function
  */
 const serviceMap = {
-  login: readUser2,
+  login: readUser,
 };
 
 /**
@@ -73,11 +46,13 @@ const serviceMap = {
 let securityHttpProxy = function (httpRequest, httpResponse) {
   httpManager.proxyManager(httpRequest, httpResponse, serviceMap);
 };
-exports.securityHttpProxy = securityHttpProxy;
+
 
 let initConfigurationServer = function (connection) {
   configuration.mongoConSec = connection.db(configuration.DBNameSec);
   console.log("Created connection for DB  : " + configuration.mongoConSec.databaseName);
 };
 
+
+exports.securityHttpProxy = securityHttpProxy;
 exports.initConfigurationServer = initConfigurationServer;

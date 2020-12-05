@@ -1,9 +1,9 @@
 // MongoDB configuration
-var home = false;
-const security = true;
-const jwt = true;
-const jwtGET = true;
-const jwtPOST = true;
+var home = true;
+// const security = true;
+// const jwt = true;
+// const jwtGET = true;
+// const jwtPOST = true;
 
 var urlDB_ = "192.168.0.101:27017";
 var urlDB = home ? "192.168.0.101:27017" : "srvwas1.bpbari.it:27017";
@@ -54,16 +54,16 @@ exports.MONITOR_TIMEOUT = monitorTimeout;
 //exports.JWTSecret = "Piripiccio2020";
 //exports.JWTExpire = "1h"; // 1000 * 60 * 60 * 1; // un'ora
 
-exports.JWT = {
-  enabled: jwt,
-  securityGET: jwtGET,
-  securityPOST: jwtPOST,
-  secret: "Piripiccio2020",
-  expire: "1h",
-};
+// exports.JWT = {
+//   enabled: jwt,
+//   securityGET: jwtGET,
+//   securityPOST: jwtPOST,
+//   secret: "Piripiccio2020",
+//   expire: "1h",
+// };
 
-var basicAuth = "Basic YWRtaW46YWgwNjB2eUEu";
-var basicAuthRequired = security;
+// var basicAuth = "Basic YWRtaW46YWgwNjB2eUEu";
+// var basicAuthRequired = security;
 var basicAuthShelly = "Basic YWRtaW46YWgwNjB2eUEu";
 
 var minTemp = 17.0;
@@ -87,8 +87,8 @@ exports.basicAuthShelly = basicAuthShelly;
 
 exports.SERVER_PORT = serverPort;
 exports.MONITOR_TIMEOUT = monitorTimeout;
-exports.BASIC_AUTH = basicAuth;
-exports.BASIC_AUTH_REQUIRED = basicAuthRequired;
+// exports.BASIC_AUTH = basicAuth;
+// exports.BASIC_AUTH_REQUIRED = basicAuthRequired;
 
 exports.MIN_TEMP_OFF = minTemp;
 exports.MIN_TEMP_ON = minTempOn;

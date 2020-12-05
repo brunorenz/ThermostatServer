@@ -1,43 +1,17 @@
-const globaljs = require("../../ThermServer/routes/global");
+const configuration = require("./configuration");
 const jwt = require("jsonwebtoken");
-
-let getUserRecord = function () {
-  let u = {
-    email: "",
-    password: "",
-    name: "",
-  };
-  return u;
-};
-
-let sign = function (user) {
-  let token = jwt.sign(user, globaljs.JWT.secret, {
-    expiresIn: globaljs.JWT.expire,
-  });
-  return token;
-};
-
-let verifyToken = function (token) {
-  try {
-    let user = jwt.verify(token, globaljs.JWT.secret);
-    console.log("JWT OK for " + user.email);
-  } catch (error) {
-    console.log("JWT KO for token " + token + " : " + error);
-    return false;
-  }
-  return true;
-};
 
 /**
  * Check basic authentication from http header
  */
-var validateBasicAuthentication = function (req, res) {
+let validateBasicAuthentication = function (req, res) {
+  let basicConf = configuration.Security;
   var rc = true;
-  if ((req.method === "GET" || req.method === "POST") && globaljs.BASIC_AUTH_REQUIRED) {
+  if ((req.method === "GET" || req.method === "POST") && basicConf.basicAuthRequired) {
     if (!req.headers.authorization) {
       res.status(401).send("missing authorization header").end();
       rc = false;
-    } else if (req.headers.authorization !== globaljs.BASIC_AUTH) {
+    } else if (req.headers.authorization !== basicConf.basicAuth) {
       res.status(401).end();
       rc = false;
     }
@@ -48,38 +22,33 @@ var validateBasicAuthentication = function (req, res) {
 /**
  * Check basic authentication from http header
  */
-var validateJWTSecurity = function (req, res) {
+let validateJWTSecurity = function (req, res) {
   var rc = true;
   if (req.path.endsWith("login")) return true;
-  if (
-    globaljs.JWT.enabled &&
-    ((globaljs.JWT.securityGET && req.method === "GET") || (globaljs.JWT.securityPOST && req.method === "POST"))
-  ) {
+  let jwtConf = configuration.Security.jwt;
+  if (jwtConf.enabled) {
     let jwttoken = undefined;
     if (req.cookies != undefined && req.cookies.jwttoken) jwttoken = req.cookies.jwttoken;
     else if (req.headers != undefined && req.headers.jwttoken) jwttoken = req.headers.jwttoken;
     if (jwttoken === undefined) {
-      res.status(401).send("missing jwt token header").end();
+      res.status(401).send("Missing jwt token").end();
       rc = false;
     } else {
-      let ok = verifyToken(jwttoken);
-      if (!ok) {
+      let jwtData = decrypt(jwttoken);
+      if (jwtData === undefined) {
         res.status(403).send("Token expired").end();
         rc = false;
-      } else req.jwttoken = jwttoken;
+      } else 
+      {
+        req.jwttoken = jwttoken;
+        req.jwtData = jwtData;
+      }
     }
   }
   return rc;
 };
 
-// exports.manageJwtToken = function (req, res, next) {
-//   if (req.jwttoken != undefined) {
-//     res.append("Set-Cookie", req.jwttoken);
-//   }
-//   next();
-// };
-
-exports.checkBasicSecurity = function (req, res, next) {
+let checkBasicSecurity = function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "http://localhost:8080");
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, jwttoken");
@@ -89,24 +58,50 @@ exports.checkBasicSecurity = function (req, res, next) {
       next();
     } else {
       console.log("Check BASIC Security, JWT and set CORS : Fails!");
-      //res.sendStatus(500, "Check BASIC Security, JWT and set CORS : Fails!");
     }
   } else next();
 };
 
-exports.sign = sign;
-
 let encrypt = function (obj) {
-  let token = jwt.sign(obj, Constants.JWT.secret);
+  let jwtConf = configuration.Security.jwt;
+  delete obj["exp"];
+  delete obj["iat"];
+  let token = jwt.sign(obj, jwtConf.secret, {
+    expiresIn: jwtConf.expire,
+  });
   return token;
 };
 
 let decrypt = function (token) {
+  let jwtConf = configuration.Security.jwt;
   let obj = undefined;
   try {
-    obj = jwt.verify(token, Constants.JWT.secret);
+    obj = jwt.verify(token, jwtConf.secret);
   } catch (error) {
     console.log("JWT KO for token " + token + " : " + error);
   }
   return obj;
 };
+
+
+let setJwt = function(req,key,value)
+{
+  let jwtData = req.jwtData;
+  if (jwtData === undefined)
+  jwtData = {};
+  jwtData[key] = value;
+  req.jwtData = jwtData;
+}
+
+let getJwt = function(req,key)
+{
+  let jwtData = req.jwtData;
+  if (jwtData === undefined)
+  jwtData = {};
+  return jwtData[key];
+}
+
+exports.encrypt = encrypt;
+exports.setJwt = setJwt;
+exports.getJwt = getJwt;
+exports.checkBasicSecurity = checkBasicSecurity;

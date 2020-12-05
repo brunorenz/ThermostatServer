@@ -108,7 +108,7 @@ function setupHTTP() {
  */
 function setupTimer() {
   var timers = require("./ThermServer/routes/timersManager");
-  //setTimeout(timers.checkTemperature, 5000);
+  setTimeout(timers.checkTemperature, 5000);
 }
 
 /**
