@@ -11,8 +11,8 @@ exports.mongoConSec = mongoConSec;
 
 let JWT = {
     enabled: jwtEnable,
-    secret: "Piripiccio2020",
-    expire: "1h",
+    secret: "Piripiccio2020!",
+    expire: "24h",
   };
   
   var basicAuth = "Basic YWRtaW46YWgwNjB2eUEu";

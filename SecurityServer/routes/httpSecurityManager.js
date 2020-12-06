@@ -12,7 +12,7 @@ let validateBasicAuthentication = function (req, res) {
       res.status(401).send("missing authorization header").end();
       rc = false;
     } else if (req.headers.authorization !== basicConf.basicAuth) {
-      res.status(401).end();
+      res.status(403).end("not authorized");
       rc = false;
     }
   }
@@ -38,9 +38,8 @@ let validateJWTSecurity = function (req, res) {
       if (jwtData === undefined) {
         res.status(403).send("Token expired").end();
         rc = false;
-      } else 
-      {
-        req.jwttoken = jwttoken;
+      } else {
+        //req.jwttoken = jwttoken;
         req.jwtData = jwtData;
       }
     }
@@ -83,25 +82,27 @@ let decrypt = function (token) {
   return obj;
 };
 
-
-let setJwt = function(req,key,value)
-{
+let cleanJwt = function (req) {
+  if (req.jwtData != undefined)
+    delete req["jwtData"];
+}
+let setJwt = function (req, key, value) {
   let jwtData = req.jwtData;
   if (jwtData === undefined)
-  jwtData = {};
+    jwtData = {};
   jwtData[key] = value;
   req.jwtData = jwtData;
 }
 
-let getJwt = function(req,key)
-{
+let getJwt = function (req, key) {
   let jwtData = req.jwtData;
   if (jwtData === undefined)
-  jwtData = {};
+    jwtData = {};
   return jwtData[key];
 }
 
 exports.encrypt = encrypt;
 exports.setJwt = setJwt;
 exports.getJwt = getJwt;
+exports.cleanJwt = cleanJwt;
 exports.checkBasicSecurity = checkBasicSecurity;

@@ -11,11 +11,10 @@ var genericHTTPPostService = function (options) {
     if (req.jwtData != undefined) {
       let t = "jwttoken=" + httpSecurityManager.encrypt(req.jwtData) + "; Path=/; HttpOnly";
       res.append("Set-Cookie", t);
+    } else{
+      let t = "jwttoken=empty; expires="+new Date(new Date().getTime()-100000).toUTCString()+ "; Path=/; HttpOnly";
+      res.append("Set-Cookie", t);
     }
-    // if (req.jwttoken != undefined) {
-    //   let t = "jwttoken=" + req.jwttoken + "; Path=/; HttpOnly";
-    //   res.append("Set-Cookie", t);
-    // }
     if (options.error) {
       let errorCode = 500;
       if (options.errorCode != "undefined") errorCode = options.errorCode;
@@ -106,10 +105,12 @@ let processJWTToken = function (options) {
  * @param {*} httpRequest
  * @param {*} httpResponse
  */
-let proxyManager = function (httpRequest, httpResponse, serviceMap) {
+let proxyManager = function (httpRequest, httpResponse, serviceMap,noSecurity) {
   let functionName = httpUtils.getFunctionFromUrl(httpRequest.url);
   console.log("ProxyHTTPRequestManager " + httpRequest.url + " --> " + functionName);
   let fn = serviceMap[functionName];
+  delete httpRequest["noSecurity"];
+  if (noSecurity != undefined) httpRequest.noSecurity = true;
   if (fn != undefined) proxyPromise(fn, httpRequest, httpResponse);
   else httpResponse.json(httpUtils.createResponseKo(500, "service " + functionName + " is not implemented"));
 };

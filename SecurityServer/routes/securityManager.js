@@ -4,9 +4,14 @@ var configuration = require("./configuration");
 
 var mongoSec = null;
 
+let logout = function (options, resolve, reject) {
+  httpSecurityManager.cleanJwt(options.httpRequest);
+  resolve(options);
+}
+
 let readUser = function (options, resolve, reject) {
   let user = options.request;
-  let token = "KO";
+  //let token = "KO";
   console.log("USER " + typeof user);
   console.log("EMAIL " + typeof user.email);
   if (typeof user != "undefined" && typeof user.email != "undefined") {
@@ -27,7 +32,7 @@ let readUser = function (options, resolve, reject) {
       options.errorCode = 200;
       options.error = "Utente o Password errati!";
     }
-    options.httpRequest.jwttoken = token;
+    //options.httpRequest.jwttoken = token;
   }
   resolve(options);
 };
@@ -36,6 +41,7 @@ let readUser = function (options, resolve, reject) {
  */
 const serviceMap = {
   login: readUser,
+  logout
 };
 
 /**

@@ -28,4 +28,9 @@ let thermHttpProxy = function (httpRequest, httpResponse) {
   httpManager.proxyManager(httpRequest, httpResponse, serviceMap);
 };
 
+let thermHttpProxyNoSecurity = function (httpRequest, httpResponse) {
+  httpManager.proxyManager(httpRequest, httpResponse, serviceMap,true);
+};
+
 exports.thermHttpProxy = thermHttpProxy;
+exports.thermHttpProxyNoSecurity = thermHttpProxyNoSecurity;
