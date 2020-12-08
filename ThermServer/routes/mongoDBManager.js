@@ -300,37 +300,37 @@ var readProgramming = function (options, resolve, reject) {
 };
 exports.readProgramming = readProgramming;
 
-/**
- * Execute a generic query
- * @param {*} options
- * @param {*} resolve
- * @param {*} reject
- */
-exports.genericQuery = function (options, resolve, reject) {
-  let qf = function (err, doc) {
-    if (err) {
-      console.error("ERRORE esecuzione query " + err);
-    } else {
-      if (doc) {
-        options.response = doc;
-      } else options.response = [];
-    }
-    if (options.usePromise) {
-      if (err) reject(err);
-      else resolve(options);
-    } else thermManager.callback(options, err);
-  };
-  let query = options.genericQuery;
-  let confColl = query.collection;
-  let filter = {};
-  let sort = {};
-  if (typeof query.filter != "undefined") filter = query.filter;
-  if (typeof query.sort != "undefined") sort = query.sort;
-  let selectOne = true;
-  if (typeof query.selectOne != "undefined") selectOne = query.selectOne;
-  if (selectOne) confColl.findOne(filter, { sort: sort }, qf);
-  else confColl.find(filter, { sort: sort }).toArray(qf);
-};
+// /**
+//  * Execute a generic query
+//  * @param {*} options
+//  * @param {*} resolve
+//  * @param {*} reject
+//  */
+// exports.genericQuery = function (options, resolve, reject) {
+//   let qf = function (err, doc) {
+//     if (err) {
+//       console.error("ERRORE esecuzione query " + err);
+//     } else {
+//       if (doc) {
+//         options.response = doc;
+//       } else options.response = [];
+//     }
+//     if (options.usePromise) {
+//       if (err) reject(err);
+//       else resolve(options);
+//     } else thermManager.callback(options, err);
+//   };
+//   let query = options.genericQuery;
+//   let confColl = query.collection;
+//   let filter = {};
+//   let sort = {};
+//   if (typeof query.filter != "undefined") filter = query.filter;
+//   if (typeof query.sort != "undefined") sort = query.sort;
+//   let selectOne = true;
+//   if (typeof query.selectOne != "undefined") selectOne = query.selectOne;
+//   if (selectOne) confColl.findOne(filter, { sort: sort }, qf);
+//   else confColl.find(filter, { sort: sort }).toArray(qf);
+// };
 
 // /**
 //  * Update management attribute of configuration
@@ -352,7 +352,7 @@ exports.genericQuery = function (options, resolve, reject) {
  * @param {*} resolve
  * @param {*} reject
  */
-exports.updateConfigurationInternal = function (options, resolve, reject) {
+exports.updateConfigurationInternal = function (options, resolveIn, rejectIn) {
   var confcoll = globaljs.mongoCon.collection(globaljs.MONGO_CONF);
   console.log("Aggiorno MAC : " + options.macAddress + " => " + JSON.stringify(options.updateField));
   confcoll.updateOne(
@@ -366,7 +366,10 @@ exports.updateConfigurationInternal = function (options, resolve, reject) {
       if (!err) {
         // aggiorna dispositivi shelly
         new Promise(function (resolve, reject) {
-          thermManager.checkThermostatStatus({ usePromise: true }, resolve, reject);
+          if (options.temperature)
+            thermManager.checkThermostatStatus({ usePromise: true }, resolve, reject);
+          else
+            thermManager.checkLigthStatus(options, resolve, reject);
         })
           .then(function (options) {
             console.log("Aggiornato stato timer : " + JSON.stringify(options.response));
@@ -375,13 +378,8 @@ exports.updateConfigurationInternal = function (options, resolve, reject) {
             console.log("Errore in task checkThermostatStatus : " + error);
           });
         options.response = { update: r.modifiedCount };
-        resolve(options);
-      } else mongoDBMgr;
-      // options.response = { update: r.modifiedCount };
-      // if (options.usePromise) {
-      //   if (err) reject(err);
-      //   else resolve(options);
-      // } else thermManager.callback(options, err);
+        resolveIn(options);
+      } rejectIn(err);
     }
   );
 };

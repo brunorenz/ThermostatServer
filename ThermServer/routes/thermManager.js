@@ -68,12 +68,6 @@ exports.manageProgramming = function (options, resolveIn, rejectIn) {
   }
 };
 
-// /**
-//  * check and update thermostat configuration
-//  */
-// exports.monitorInternal = function(options) {
-//   mongoDBMgr.monitorSensorData(options);
-// };
 
 /**
  * check and update thermostat configuration
@@ -163,9 +157,18 @@ exports.readConfigurationInternal = function (options) {
 exports.updateStatus = function (options, resolveIn, rejectIn) {
   try {
     let req = options.request;
-    options.updateField = {
-      statusThermostat: parseInt(req.statusThermostat),
-    };
+    if (req.statusThermostat != undefined) {
+      options.updateField = {
+        statusThermostat: parseInt(req.statusThermostat),
+        temperature: true,
+      };
+
+    } else if (req.statusLight != undefined) {
+      options.updateField = {
+        statusLight: parseInt(req.statusLight),
+        temperature: false,
+      };
+    } else rejectIn("missing input data");
     options.macAddress = req.macAddress;
   } catch (error) {
     rejectIn(error);
@@ -197,7 +200,7 @@ let wifiRegisterInternal = function (options) {
   mongoDBMgr.readConfiguration(options);
 };
 
-let arduinoDeviceRegister = function (options, resolveIn, rejectIn) {};
+let arduinoDeviceRegister = function (options, resolveIn, rejectIn) { };
 
 exports.wifiRegisterInternal = wifiRegisterInternal;
 // var readProgramming = function(options) {
@@ -364,11 +367,11 @@ exports.getStatistics = function (options, resolveIn, rejectIn) {
       filter:
         options.statisticType === "RELE"
           ? {
-              $or: [{ flagReleTemp: 1 }, { flagReleLight: 1 }],
-            }
+            $or: [{ flagReleTemp: 1 }, { flagReleLight: 1 }],
+          }
           : {
-              $or: [{ flagTemperatureSensor: 1 }, { flagLightSensor: 1 }],
-            },
+            $or: [{ flagTemperatureSensor: 1 }, { flagLightSensor: 1 }],
+          },
       selectOne: false,
     };
     options.genericQuery = query;
@@ -418,7 +421,7 @@ let readReleMotionLight = function (options) {
  * Reads the configuration of the thermostat type relays
  * @param {*} options
  */
-let readReleTemperature = function (options) {
+let findTemperatureRele = function (options) {
   return new Promise(function (resolve, reject) {
     let query = {
       collection: globaljs.mongoCon.collection(globaljs.MONGO_CONF),
@@ -434,7 +437,7 @@ let readReleTemperature = function (options) {
  * Reads the temperature sensor configuration
  * @param {*} options
  */
-let readSensor = function (options) {
+let findSensor = function (options) {
   return new Promise(function (resolve, reject) {
     let query = {
       collection: globaljs.mongoCon.collection(globaljs.MONGO_CONF),
@@ -481,13 +484,13 @@ let readProgramming = function (options, resolve, reject) {
 let computeTemperatureReleStatus = function (options, resolveIn, rejectIn) {
   // find the temperature rele
   // mi arriva
-  let r1 = readReleTemperature(options);
+  let r1 = findTemperatureRele(options);
   r1.then(function (options) {
     let conf = options.response;
     options.releConf = conf;
     options.filterSensor = { flagTemperatureSensor: 1 };
     // find all temperature sensore
-    let r2 = readSensor(options);
+    let r2 = findSensor(options);
     r2.then(function (options) {
       // compute temperature according to rele configuration
       options.tempSensor = options.response;
@@ -520,7 +523,7 @@ let computeLightReleStatus = function (options, resolveIn, rejectIn) {
   options.filterSensor = { macAddress: options.conf.primarySensor };
   //$and: [{ macAddress: options.conf.primarySensor }, { flagReleLight: 1 }]
   // find all temperature sensore
-  let r2 = readSensor(options);
+  let r2 = findSensor(options);
   r2.then(function (options) {
     // compute temperature according to rele configuration
     options.lightSensor = options.response;
@@ -536,6 +539,10 @@ let computeLightReleStatus = function (options, resolveIn, rejectIn) {
     rejectIn(error);
   });
 };
+
+let checkLigthStatus = function (options, resolveIn, rejectIn) {
+  updateMotionReleStatus(options, resolveIn, rejectIn);
+}
 
 let checkThermostatStatus = function (options, resolveIn, rejectIn) {
   new Promise(function (resolve, reject) {
@@ -580,7 +587,7 @@ let updateMotionReleStatus = function (options, resolveIn, rejectIn) {
   let r1 = readReleMotionLight(options);
   r1.then(function (options) {
     new Promise(function (resolve, reject) {
-      if (options.response.length == 0) resolveIn(oprions);
+      if (options.response.length == 0) resolveIn(options);
       else {
         options.conf = options.response[0];
         computeLightReleStatus(options, resolve, reject);
@@ -588,9 +595,21 @@ let updateMotionReleStatus = function (options, resolveIn, rejectIn) {
     })
       .then(function (options) {
         console.log("Light : " + JSON.stringify(options.response));
-        //TODO per ora gestisco un solo rele
+        let status = config.TypeStatus.OFF;
         let l = options.response;
-        if (l.currentLight < l.minLightAuto) {
+        switch (options.releConf.statusLight) {
+          case config.TypeStatus.ON:
+            status = config.TypeStatus.ON;
+            break;
+          case config.TypeStatus.AUTO:
+            if (l.currentLight < l.minLightAuto) status = config.TypeStatus.ON;
+            break;
+          case config.TypeStatus.MANUAL:
+            //if (options.response.temperature < options.response.minTempManual) status = config.TypeStatus.ON;
+            break;
+        }
+        //TODO per ora gestisco un solo rele
+        if (status === config.TypeStatus.ON) {
           console.log("Accendo rele " + options.response.primarySensor);
           let shellyCommand = {
             deviceid: options.conf.shellyMqttId,
@@ -599,6 +618,15 @@ let updateMotionReleStatus = function (options, resolveIn, rejectIn) {
           };
           timerMgr.manageLightRele(shellyCommand);
         }
+        // if (l.currentLight < l.minLightAuto) {
+        //   console.log("Accendo rele " + options.response.primarySensor);
+        //   let shellyCommand = {
+        //     deviceid: options.conf.shellyMqttId,
+        //     macAddress: options.conf.macAddress,
+        //     sensorMacAddress: options.conf.primarySensor,
+        //   };
+        //   timerMgr.manageLightRele(shellyCommand);
+        // }
         resolveIn(options);
       })
       .catch(function (error) {
@@ -608,49 +636,7 @@ let updateMotionReleStatus = function (options, resolveIn, rejectIn) {
     rejectIn(error);
   });
 };
-/**
- *
- * @param {*} options {macAddreess, motion}
- * @param {*} resolveIn
- * @param {*} rejectIn
- */
-let updateMotionReleStatus2 = function (options, resolveIn, rejectIn) {
-  // find the temperature rele
-  let r1 = readReleMotionLight(options);
-  r1.then(function (options) {
-    let conf = options.response;
-    options.releConf = conf;
-    if (conf.length > 0) {
-      options.programmingType = config.TypeProgramming.LIGHT;
-      let r3 = readProgrammingPromise(options);
-      r3.then(function (options) {
-        // per ogni rele trovato gestisci stato
-        options.programming = options.response;
-        new Promise(function (resolve, reject) {
-          evaluateLight(options, resolveIn, rejectIn);
-        })
-          .then(function (options) {
-            for (let ix = 0; ix < conf.length; ix++) {
-              // call shelly
-              let shellyCommand = {
-                deviceid: conf[ix].shellyMqttId,
-                macAddress: conf[ix].macAddress,
-              };
-              timerMgr.manageLightRele(shellyCommand);
-            }
-            resolveIn(options);
-          })
-          .catch(function (error) {
-            rejectIn(error);
-          });
-      }).catch(function (error) {
-        rejectIn(error);
-      });
-    } else resolveIn(options);
-  }).catch(function (error) {
-    rejectIn(error);
-  });
-};
+
 /**
  *
  * @param {*} options {macAddress,motion}
@@ -659,6 +645,7 @@ let updateMotionReleStatus2 = function (options, resolveIn, rejectIn) {
  */
 let processMotion = function (options, resolveIn, rejectIn) {
   if (options.request.motion === 1) {
+    // solo se acceso aggiorno rele. Se pento il rele si spegne al timeout impostato
     new Promise(function (resolve, reject) {
       updateMotionReleStatus(options, resolve, reject);
     })
@@ -729,7 +716,7 @@ let evaluateLight = function (options, resolveIn, rejectIn) {
 /**
  * evalute temperature according programming
  * @param {*} options
- * @param {*} resolveIn
+ * @param {*} resolveInoptions, resolveIn, rejectIn
  * @param {*} rejectIn
  */
 let evaluateTemperature = function (options, resolveIn, rejectIn) {
@@ -916,6 +903,7 @@ let getReleData2 = function (options, resolveIn, rejectIn) {
 exports.getReleData = getReleData2;
 exports.getSensorData = getSensorData;
 exports.checkThermostatStatus = checkThermostatStatus;
+exports.checkLigthStatus = checkLigthStatus;
 exports.updateTemperatureReleStatus = computeTemperatureReleStatus;
 /**
  * Get Configuration

@@ -22,17 +22,17 @@ var getStatusByProgram = function (options) {
   if (shellyCommand.status === config.TypeStatus.MANUAL || shellyCommand.status === config.TypeStatus.AUTO) {
     let prog = options.response;
     if (prog.idProgType === config.TypeProgramming.TEMP) {
-      let themp = shellyCommand.temperature;
+      let tempRecords = shellyCommand.temperature;
       let temperature = 0.0;
       //let currentProg = prog.programming[prog.activeProg];
       let currentProg = prog.programming[getIndexProgram(prog)];
-      if (themp.length === 1) temperature = themp[0].currentTemperature;
+      if (tempRecords.length === 1) temperature = tempRecords[0].currentTemperature;
       else {
-        for (let ix = 0; ix < themp.length; ix++) {
+        for (let ix = 0; ix < tempRecords.length; ix++) {
           // faccio media di default
-          temperature += themp[ix].currentTemperature;
+          temperature += tempRecords[ix].currentTemperature;
         }
-        temperature = temperature / themp.length;
+        temperature = temperature / tempRecords.length;
       }
       //console.log("Temperatura calcolata : " + temperature);
       let minTemp = currentProg.minTempManual;
