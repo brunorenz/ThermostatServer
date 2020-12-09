@@ -50,3 +50,6 @@ Gestione Termostato
 		call : monitorReleData
 
  
+
+
+- readMonitor (utilizzato da pannello Rele)
