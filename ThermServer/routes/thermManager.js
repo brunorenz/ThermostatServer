@@ -68,7 +68,6 @@ exports.manageProgramming = function (options, resolveIn, rejectIn) {
   }
 };
 
-
 /**
  * check and update thermostat configuration
  */
@@ -160,14 +159,13 @@ exports.updateStatus = function (options, resolveIn, rejectIn) {
     if (req.statusThermostat != undefined) {
       options.updateField = {
         statusThermostat: parseInt(req.statusThermostat),
-        temperature: true,
       };
-
+      options.temperature = true;
     } else if (req.statusLight != undefined) {
       options.updateField = {
         statusLight: parseInt(req.statusLight),
-        temperature: false,
       };
+      options.temperature = false;
     } else rejectIn("missing input data");
     options.macAddress = req.macAddress;
   } catch (error) {
@@ -200,7 +198,7 @@ let wifiRegisterInternal = function (options) {
   mongoDBMgr.readConfiguration(options);
 };
 
-let arduinoDeviceRegister = function (options, resolveIn, rejectIn) { };
+let arduinoDeviceRegister = function (options, resolveIn, rejectIn) {};
 
 exports.wifiRegisterInternal = wifiRegisterInternal;
 // var readProgramming = function(options) {
@@ -367,11 +365,11 @@ exports.getStatistics = function (options, resolveIn, rejectIn) {
       filter:
         options.statisticType === "RELE"
           ? {
-            $or: [{ flagReleTemp: 1 }, { flagReleLight: 1 }],
-          }
+              $or: [{ flagReleTemp: 1 }, { flagReleLight: 1 }],
+            }
           : {
-            $or: [{ flagTemperatureSensor: 1 }, { flagLightSensor: 1 }],
-          },
+              $or: [{ flagTemperatureSensor: 1 }, { flagLightSensor: 1 }],
+            },
       selectOne: false,
     };
     options.genericQuery = query;
@@ -519,10 +517,8 @@ let computeTemperatureReleStatus = function (options, resolveIn, rejectIn) {
  * @param {*} rejectIn
  */
 let computeLightReleStatus = function (options, resolveIn, rejectIn) {
-  options.releConf = options.conf;
-  options.filterSensor = { macAddress: options.conf.primarySensor };
-  //$and: [{ macAddress: options.conf.primarySensor }, { flagReleLight: 1 }]
-  // find all temperature sensore
+  options.releConf = options.releConfiguration;
+  options.filterSensor = { macAddress: options.releConfiguration.primarySensor };
   let r2 = findSensor(options);
   r2.then(function (options) {
     // compute temperature according to rele configuration
@@ -542,7 +538,7 @@ let computeLightReleStatus = function (options, resolveIn, rejectIn) {
 
 let checkLigthStatus = function (options, resolveIn, rejectIn) {
   updateMotionReleStatus(options, resolveIn, rejectIn);
-}
+};
 
 let checkThermostatStatus = function (options, resolveIn, rejectIn) {
   new Promise(function (resolve, reject) {
@@ -589,7 +585,7 @@ let updateMotionReleStatus = function (options, resolveIn, rejectIn) {
     new Promise(function (resolve, reject) {
       if (options.response.length == 0) resolveIn(options);
       else {
-        options.conf = options.response[0];
+        options.releConfiguration = options.response[0];
         computeLightReleStatus(options, resolve, reject);
       }
     })
@@ -618,15 +614,6 @@ let updateMotionReleStatus = function (options, resolveIn, rejectIn) {
           };
           timerMgr.manageLightRele(shellyCommand);
         }
-        // if (l.currentLight < l.minLightAuto) {
-        //   console.log("Accendo rele " + options.response.primarySensor);
-        //   let shellyCommand = {
-        //     deviceid: options.conf.shellyMqttId,
-        //     macAddress: options.conf.macAddress,
-        //     sensorMacAddress: options.conf.primarySensor,
-        //   };
-        //   timerMgr.manageLightRele(shellyCommand);
-        // }
         resolveIn(options);
       })
       .catch(function (error) {
@@ -813,11 +800,12 @@ let getTemperature = function (sensor, macAddress) {
   return temperature;
 };
 
-let readMonitor = function (options) {
+let readReleFullInfo = function (options) {
+  // recupero stato attulae interruttore shelly
   options.genericQuery = {
     collection: globaljs.mongoCon.collection(globaljs.MONGO_SHELLYSTAT),
     selectOne: true,
-    filter: { shellyId: options.conf.shellyMqttId },
+    filter: { shellyId: options.releConfiguration.shellyMqttId },
     sort: { time: -1 },
   };
   return new Promise(function (resolveIn, rejectIn) {
@@ -825,10 +813,13 @@ let readMonitor = function (options) {
       mongoUtils.genericQuery(options, resolve, reject);
     })
       .then(function (options) {
+        // input shellyData : dati interruttore
+        //       conf : configurazione Rele
+        // releConfiguration : configurazione Rele
         options.shellyData = options.response;
-        if (options.conf.flagReleTemp === 1) {
+        if (options.releConfiguration.flagReleTemp === 1) {
           computeTemperatureReleStatus(options, resolveIn, rejectIn);
-        } else if (options.conf.flagReleLight === 1) {
+        } else if (options.releConfiguration.flagReleLight === 1) {
           computeLightReleStatus(options, resolveIn, rejectIn);
         } else resolveIn(options);
       })
@@ -844,7 +835,7 @@ let readMonitor = function (options) {
  * @param {*} resolveIn
  * @param {*} rejectIn
  */
-let getReleData2 = function (options, resolveIn, rejectIn) {
+let getReleData = function (options, resolveIn, rejectIn) {
   new Promise(function (resolve, reject) {
     let query = {
       collection: globaljs.mongoCon.collection(globaljs.MONGO_CONF),
@@ -863,10 +854,11 @@ let getReleData2 = function (options, resolveIn, rejectIn) {
         for (let ix = 0; ix < options.response.length; ix++) {
           let optionsN = {
             usePromise: true,
-            confRele: options.response,
+            //confRele: options.response,
             conf: options.response[ix],
+            releConfiguration: options.response[ix],
           };
-          pIn.push(readMonitor(optionsN));
+          pIn.push(readReleFullInfo(optionsN));
         }
         if (pIn.length > 0) {
           Promise.all(pIn)
@@ -874,12 +866,12 @@ let getReleData2 = function (options, resolveIn, rejectIn) {
               options.response = [];
               for (let ix = 0; ix < optionsN.length; ix++) {
                 let entry = {
-                  configuration: optionsN[ix].conf,
+                  configuration: optionsN[ix].releConfiguration,
                   shelly: optionsN[ix].shellyData,
                 };
-                if (optionsN[ix].conf.flagReleTemp === 1) {
+                if (optionsN[ix].releConfiguration.flagReleTemp === 1) {
                   entry.temperature = optionsN[ix].response;
-                } else if (optionsN[ix].conf.flagReleLight === 1) {
+                } else if (optionsN[ix].releConfiguration.flagReleLight === 1) {
                   entry.light = optionsN[ix].response;
                 }
                 options.response.push(entry);
@@ -900,7 +892,7 @@ let getReleData2 = function (options, resolveIn, rejectIn) {
 /**
  * Exported function
  */
-exports.getReleData = getReleData2;
+exports.getReleData = getReleData;
 exports.getSensorData = getSensorData;
 exports.checkThermostatStatus = checkThermostatStatus;
 exports.checkLigthStatus = checkLigthStatus;
